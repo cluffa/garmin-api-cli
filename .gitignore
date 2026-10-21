@@ -1,0 +1,23 @@
+# Python / uv
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+dist/
+build/
+*.egg-info/
+
+# Secrets and key material: never commit these
+.env
+.env.*
+*.env
+personal-api-key*
+connect-personal-api-key*
+*bearer-token*.json
+*.pem
+*.key
+
+# Downloaded activity files
+*.fit
+*.zip
+!tests/fixtures/*.fit

@@ -1,0 +1,17 @@
+[
+  {"activityId": 9000000003, "activityName": "Tempo Run", "startTimeLocal": "2026-10-20 07:00:00", "startTimeGMT": "2026-10-20 11:00:00",
+   "activityType": {"typeId": 1, "typeKey": "running", "parentTypeId": 17}, "eventType": {"typeId": 9, "typeKey": "uncategorized"},
+   "distance": 10000.0, "duration": 2700.0, "elapsedDuration": 2750.0, "movingDuration": 2690.0, "elevationGain": 55.0, "elevationLoss": 54.0,
+   "averageSpeed": 3.7037, "maxSpeed": 4.6, "calories": 720.0, "averageHR": 158.0, "maxHR": 175.0, "activityTrainingLoad": 140.2,
+   "ownerId": 1, "ownerDisplayName": "test-user", "splitSummaries": [], "lapCount": 10},
+  {"activityId": 9000000002, "activityName": "Easy Ride", "startTimeLocal": "2026-10-19 18:00:00", "startTimeGMT": "2026-10-19 22:00:00",
+   "activityType": {"typeId": 2, "typeKey": "cycling", "parentTypeId": 17}, "eventType": {"typeId": 9, "typeKey": "uncategorized"},
+   "distance": 30000.0, "duration": 3600.0, "elapsedDuration": 3700.0, "movingDuration": 3580.0, "elevationGain": 210.0, "elevationLoss": 205.0,
+   "averageSpeed": 8.3333, "maxSpeed": 13.1, "calories": 800.0, "averageHR": 128.0, "maxHR": 150.0, "activityTrainingLoad": 60.0,
+   "ownerId": 1, "ownerDisplayName": "test-user", "splitSummaries": [], "lapCount": 1},
+  {"activityId": 9000000001, "activityName": "Long Run", "startTimeLocal": "2026-10-18 08:00:00", "startTimeGMT": "2026-10-18 12:00:00",
+   "activityType": {"typeId": 6, "typeKey": "trail_running", "parentTypeId": 1}, "eventType": {"typeId": 9, "typeKey": "uncategorized"},
+   "distance": 21097.5, "duration": 7200.0, "elapsedDuration": 7300.0, "movingDuration": 7150.0, "elevationGain": 400.0, "elevationLoss": 398.0,
+   "averageSpeed": 2.9302, "maxSpeed": 4.0, "calories": 1500.0, "averageHR": 145.0, "maxHR": 165.0, "activityTrainingLoad": 210.0,
+   "ownerId": 1, "ownerDisplayName": "test-user", "splitSummaries": [], "lapCount": 22}
+]

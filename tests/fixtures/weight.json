@@ -1,0 +1,8 @@
+{"dailyWeightSummaries": [
+  {"summaryDate": "2026-10-15", "numOfWeightEntries": 1, "minWeight": 80500.0, "maxWeight": 80500.0,
+   "latestWeight": {"samplePk": 2, "date": 1792036800000, "calendarDate": "2026-10-15", "weight": 80500.0, "bmi": 24.1, "bodyFat": 18.5,
+     "bodyWater": 55.0, "boneMass": 3500.0, "muscleMass": 38000.0, "sourceType": "INDEX_SCALE", "weightDelta": -300.0}, "allWeightMetrics": []},
+  {"summaryDate": "2026-10-01", "numOfWeightEntries": 1, "minWeight": 80800.0, "maxWeight": 80800.0,
+   "latestWeight": {"samplePk": 1, "date": 1790827200000, "calendarDate": "2026-10-01", "weight": 80800.0, "bmi": null, "bodyFat": null,
+     "bodyWater": null, "boneMass": null, "muscleMass": null, "sourceType": "MANUAL", "weightDelta": null}, "allWeightMetrics": []}],
+ "totalAverage": {"from": 1790827200000, "until": 1792036800000, "weight": 80650.0}, "previousDateWeight": null, "nextDateWeight": null}

@@ -1,0 +1,29 @@
+[project]
+name = "garmin-official-cli"
+version = "0.1.0"
+description = "Agent-first CLI for Garmin Connect built only on the official Garmin Connect Developer Program APIs"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1,<9",
+    "requests>=2.31,<3",
+    "python-toon>=0.1",
+    "garmin-fit-sdk>=21.158",
+]
+
+[project.scripts]
+garmin-official = "garmin_official_cli.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/garmin_official_cli"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

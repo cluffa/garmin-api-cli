@@ -1,0 +1,8 @@
+{"id": 1, "userProfilePK": 1, "calendarDate": "2026-10-21", "sleepTimeSeconds": 27000, "napTimeSeconds": 0,
+ "sleepStartTimestampGMT": 1792461600000, "sleepEndTimestampGMT": 1792490400000,
+ "sleepStartTimestampLocal": 1792447200000, "sleepEndTimestampLocal": 1792476000000,
+ "deepSleepSeconds": 6000, "lightSleepSeconds": 15000, "remSleepSeconds": 6000, "awakeSleepSeconds": 1800,
+ "averageRespirationValue": 13.5, "awakeCount": 2, "avgSleepStress": 18.2, "avgHeartRate": 48.0,
+ "sleepScoreFeedback": "POSITIVE_LONG_AND_DEEP",
+ "sleepScores": {"overall": {"value": 82, "qualifierKey": "GOOD"}, "deepPercentage": {"value": 22, "qualifierKey": "EXCELLENT"}},
+ "sleepNeed": {"baseline": 480, "actual": 470}}

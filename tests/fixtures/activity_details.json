@@ -1,0 +1,6 @@
+{"activityId": 9000000003, "measurementCount": 3, "metricsCount": 3, "totalMetricsCount": 9,
+ "metricDescriptors": [{"metricsIndex": 1, "key": "directHeartRate", "unit": {"id": 100, "key": "bpm", "factor": 1.0}},
+                       {"metricsIndex": 0, "key": "directTimestamp", "unit": {"id": 120, "key": "gmt", "factor": 0.0}},
+                       {"metricsIndex": 2, "key": "directSpeed", "unit": {"id": 20, "key": "mps", "factor": 0.1}}],
+ "activityDetailMetrics": [{"metrics": [1792494000000.0, 120.0, 3.1]}, {"metrics": [1792494005000.0, 125.0, 3.4]}, {"metrics": [1792494010000.0, 130.0, 3.6]}],
+ "detailsAvailable": true}

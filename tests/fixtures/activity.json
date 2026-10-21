@@ -1,0 +1,9 @@
+{"activityId": 9000000003, "activityUUID": {"uuid": "00000000-0000-0000-0000-000000000003"}, "activityName": "Tempo Run", "userProfileId": 1,
+ "isMultiSportParent": false, "activityTypeDTO": {"typeId": 1, "typeKey": "running", "parentTypeId": 17},
+ "eventTypeDTO": {"typeId": 9, "typeKey": "uncategorized"}, "timeZoneUnitDTO": {"timeZone": "America/New_York"},
+ "metadataDTO": {"isOriginal": true, "fileFormat": {"formatId": 7, "formatKey": "fit"}, "manufacturer": "GARMIN", "lapCount": 10, "manualActivity": false},
+ "summaryDTO": {"startTimeLocal": "2026-10-20T07:00:00.0", "startTimeGMT": "2026-10-20T11:00:00.0", "distance": 10000.0, "duration": 2700.0,
+   "movingDuration": 2690.0, "elapsedDuration": 2750.0, "elevationGain": 55.0, "elevationLoss": 54.0, "averageSpeed": 3.7037, "maxSpeed": 4.6,
+   "calories": 720.0, "averageHR": 158.0, "maxHR": 175.0, "minHR": 90.0, "averagePower": 290.0, "normalizedPower": 300.0,
+   "trainingEffect": 3.8, "anaerobicTrainingEffect": 1.2, "activityTrainingLoad": 140.2},
+ "locationName": "Testville"}

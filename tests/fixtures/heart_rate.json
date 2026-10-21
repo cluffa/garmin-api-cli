@@ -1,0 +1,3 @@
+{"userProfilePK": 1, "calendarDate": "2026-10-20", "maxHeartRate": 170, "minHeartRate": 41, "restingHeartRate": 44,
+ "lastSevenDaysAvgRestingHeartRate": 45, "heartRateValues": [[1792468800000, 52], [1792468920000, 50], [1792469040000, null]],
+ "heartRateValueDescriptors": [{"index": 0, "key": "timestamp"}, {"index": 1, "key": "heartrate"}]}
