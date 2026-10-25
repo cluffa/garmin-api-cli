@@ -127,7 +127,7 @@ def set_key(state: State) -> None:
                 f"Write a single line `{KEY_ENV_VAR}=<your key>` to {path} with an editor (not `echo`, "
                 "which leaves the key in shell history).",
                 f"chmod 600 {path}",
-                "Run `garmin-official auth status --verify`.",
+                "Run `garmin auth status --verify`.",
             ],
             "env_file": str(path),
             "env_file_format": f"{KEY_ENV_VAR}=<key>",

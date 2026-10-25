@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-garmin-official = "garmin_official_cli.cli:main"
+garmin = "garmin_official_cli.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8"]

@@ -75,7 +75,7 @@ WEIGHT_RANGE = Endpoint(
 DAILY_SUMMARIES = Endpoint("daily_summaries", "GET", "/usersummary-service/v2/dailysummaries", max_days=31)
 
 # Other Personal API GET endpoints Garmin's client wraps. The CLI has no dedicated
-# commands for them; call them with `garmin-official api get PATH`.
+# commands for them; call them with `garmin api get PATH`.
 OTHER_PERSONAL_PATHS = (
     "/usersummary-service/stats/hydration/daily/{start}/{end}",
     "/goal-service/goal/user/effective/weightgoal/{start}/{end}",

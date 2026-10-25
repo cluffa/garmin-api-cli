@@ -65,7 +65,7 @@ WORKOUT: dict[str, Any] = {
 
 SCHEMA: dict[str, Any] = {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "garmin-official workout spec",
+    "title": "garmin workout spec",
     "type": "object",
     "required": ["workouts"],
     "additionalProperties": False,

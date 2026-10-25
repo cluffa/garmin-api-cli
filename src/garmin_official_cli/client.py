@@ -163,7 +163,7 @@ def resolve_key(settings: Settings) -> KeySource:
     raise AuthError(
         "no Garmin Personal API key configured",
         hint=f"set ${KEY_ENV_VAR} or create {settings.default_env_file} (mode 600); "
-        "see `garmin-official auth set-key`",
+        "see `garmin auth set-key`",
     )
 
 
@@ -289,7 +289,7 @@ def _raise_for_status(resp: HttpResponse, method: str, path: str) -> None:
             f"{where} returned HTTP {resp.status}",
             status=resp.status,
             body=body,
-            hint="the key may be expired/revoked; run `garmin-official auth status --verify`",
+            hint="the key may be expired/revoked; run `garmin auth status --verify`",
         )
     if resp.status == 404:
         raise ApiError(

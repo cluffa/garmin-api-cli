@@ -1,4 +1,4 @@
-# REPORT: garmin-official (official-API rewrite of garmin-connect-cli)
+# REPORT: garmin (official-API rewrite of garmin-connect-cli)
 
 Date: 2026-10-21. Built autonomously from `BRIEF.md`. The old repo (`~/workspace/garmin-connect-cli`) was
 only read (README, plus its git identity); it was not modified, and none of its client code was reused.
@@ -23,7 +23,7 @@ only read (README, plus its git identity); it was not modified, and none of its 
 
 ## What was built
 
-- `uv` project, Python ≥ 3.12, package `garmin_official_cli`, console script **`garmin-official`**
+- `uv` project, Python ≥ 3.12, package `garmin_official_cli`, console script **`garmin`**
   (does not shadow `garmin`). Runtime dependencies: `click`, `requests`, `python-toon`, `garmin-fit-sdk`.
 - Layers:
   - `client.py`: `Settings.from_env`, key discovery (env var → explicit file → `~/.config/garmin/personal-api-key.env` → Garmin's raw-key file), token exchange and cache (mode 600; stores a key *fingerprint*, never the key), a `Transport` protocol with a `requests` implementation, `PersonalApiClient` (with one re-exchange on 401), and `TrainingApiClient` (Starter boundary).
@@ -125,8 +125,8 @@ Partial: `activity download` (original .FIT only) and `activity splits` (FIT lap
 ```bash
 cd ~/workspace/garmin-connect-official-cli
 uv sync
-uv run garmin-official auth status --verify
-uv run garmin-official health hrv -7d:today
-uv run garmin-official stats weekly
-uv run garmin-official capabilities | jq '.data.unsupported'
+uv run garmin auth status --verify
+uv run garmin health hrv -7d:today
+uv run garmin stats weekly
+uv run garmin capabilities | jq '.data.unsupported'
 ```

@@ -21,14 +21,14 @@ from .output import FORMATS, emit, failure
 
 
 @click.group(
-    "garmin-official",
+    "garmin",
     help="Agent-first CLI for Garmin Connect on the official Developer Program APIs (Personal tier, pull). "
     "Every command prints a JSON envelope; see `capabilities`.",
     context_settings={"help_option_names": ["-h", "--help"]},
 )
 @click.option("--format", "fmt", type=click.Choice(FORMATS), default="json", show_default=True, help="Output format.")
 @click.option("--full", is_flag=True, help="Return raw Garmin payloads instead of slim projections.")
-@click.version_option(__version__, prog_name="garmin-official")
+@click.version_option(__version__, prog_name="garmin")
 @click.pass_context
 def root(ctx: click.Context, fmt: str, full: bool) -> None:
     state = ctx.ensure_object(State)
@@ -53,7 +53,7 @@ def run(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     fmt = _sniff_format(args)
     try:
-        rv = root.main(args=args, prog_name="garmin-official", standalone_mode=False, obj=State())
+        rv = root.main(args=args, prog_name="garmin", standalone_mode=False, obj=State())
         return rv if isinstance(rv, int) else 0
     except CliError as exc:
         emit(failure(exc.to_dict()), fmt, sys.stderr)

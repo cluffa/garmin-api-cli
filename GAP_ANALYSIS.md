@@ -2,7 +2,7 @@
 
 This maps every command of the old CLI (`cluffa/garmin-connect-cli`, built on
 Garmin Connect's internal web APIs) to what the **official Garmin Connect
-Developer Program** can do. The new CLI (`garmin-official`) implements each row
+Developer Program** can do. The new CLI (`garmin`) implements each row
 as written here. Unsupported rows exist as commands that return the uniform
 `unsupported` envelope (exit 4). None of them is left out silently, and none
 returns fake data.

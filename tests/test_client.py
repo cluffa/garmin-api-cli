@@ -96,8 +96,9 @@ def test_token_exchange_headers_and_cache(tmp_path, transport):
     get = transport.calls[1]
     assert get.headers["Authorization"] == f"Bearer {FAKE_TOKEN}"
     cache = s.token_cache_path
-    assert stat.S_IMODE(cache.stat().st_mode) == 0o600
-    assert stat.S_IMODE(cache.parent.stat().st_mode) == 0o700
+    if os.name == "posix":  # Windows chmod only toggles the read-only bit
+        assert stat.S_IMODE(cache.stat().st_mode) == 0o600
+        assert stat.S_IMODE(cache.parent.stat().st_mode) == 0o700
     assert FAKE_KEY not in cache.read_text()  # only a fingerprint of the key is cached
     # A second client reuses the cached token: no second exchange.
     client2 = PersonalApiClient(s, transport, clock=lambda: 1_000_000)

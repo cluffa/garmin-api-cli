@@ -76,7 +76,7 @@ def capabilities(ctx: click.Context) -> None:
     rows = command_table(root, state)
     state.ok(
         {
-            "name": "garmin-official",
+            "name": "garmin",
             "version": __version__,
             "api": {
                 "program": "Garmin Connect Developer Program",

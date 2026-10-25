@@ -1,4 +1,4 @@
-# garmin-official
+# garmin
 
 **Agent-first CLI for Garmin Connect, built only on the official Garmin Connect Developer Program APIs.**
 It is a from-scratch rewrite of `cluffa/garmin-connect-cli`, which used Garmin's unofficial internal web
@@ -12,7 +12,7 @@ APIs. The UX contract is the same; the data source is official.
 - Every feature the official API cannot provide still exists as a command and returns a uniform
   `unsupported` envelope. See [GAP_ANALYSIS.md](GAP_ANALYSIS.md).
 
-The console script is `garmin-official`, so it does not shadow the old `garmin`.
+The console script is `garmin`. It replaces the old `garmin` from `cluffa/garmin-connect-cli`, so uninstall that one first if both are on your PATH.
 
 ## Which official tier this uses
 
@@ -26,14 +26,14 @@ The console script is `garmin-official`, so it does not shadow the old `garmin`.
 
 ```bash
 uv sync
-uv run garmin-official auth set-key      # prints the steps below
+uv run garmin auth set-key      # prints the steps below
 ```
 
 1. Create a Personal API key at <https://connect.garmin.com/app/settings/personalApiToken>.
    Keys start with `GCDC_` and are valid for one year. Only one key can exist at a time.
 2. Store it in `~/.config/garmin/personal-api-key.env` (directory 700, file **600**) as the single line
    `GARMIN_PERSONAL_API_KEY=<key>`. Use an editor, not `echo`, so the key stays out of shell history.
-3. Check it: `uv run garmin-official auth status --verify`.
+3. Check it: `uv run garmin auth status --verify`.
 
 Key lookup order: `$GARMIN_PERSONAL_API_KEY` → `$GARMIN_PERSONAL_API_KEY_FILE` →
 `~/.config/garmin/personal-api-key.env` → `~/.config/garmin/connect-personal-api-key` (the raw-key file
@@ -68,8 +68,8 @@ Every endpoint path lives in `src/garmin_official_cli/endpoints.py`. Sources and
 Global options go **before** the sub-command:
 
 ```bash
-uv run garmin-official --format toon health steps -7d:today
-uv run garmin-official --full stats summary yesterday
+uv run garmin --format toon health steps -7d:today
+uv run garmin --full stats summary yesterday
 ```
 
 ## Command reference

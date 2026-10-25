@@ -1,4 +1,7 @@
 import json
+import os
+
+import pytest
 
 from conftest import FAKE_KEY, json_response
 from garmin_official_cli import endpoints as ep
@@ -12,6 +15,7 @@ def test_status_configured_from_env(cli):
     assert FAKE_KEY not in r.out and FAKE_KEY not in r.err
 
 
+@pytest.mark.skipif(os.name != "posix", reason="POSIX file modes; Windows chmod only toggles read-only")
 def test_status_from_env_file_reports_mode(cli, monkeypatch, tmp_path):
     monkeypatch.delenv("GARMIN_PERSONAL_API_KEY")
     f = tmp_path / "home/.config/garmin/personal-api-key.env"
