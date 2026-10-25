@@ -33,6 +33,7 @@ def test_list_slim_projection(cli, transport):
         "id": 9000000003, "name": "Tempo Run", "type": "running", "start_local": "2026-10-20 07:00:00",
         "duration_s": 2700.0, "moving_s": 2690.0, "distance_km": 10.0, "pace": "4:30/km", "avg_hr": 158.0,
         "max_hr": 175.0, "calories": 720.0, "elevation_gain_m": 55.0, "training_load": 140.2,
+        "aerobic_te": 3.4, "te_label": "tempo", "avg_cadence_spm": 172.0, "hr_zones_s": [120.0, 600.0, 900.0, 1000.0, 80.0],
     }
     assert transport.data_calls()[0].params == {"start": 0, "limit": 3}
 
@@ -61,6 +62,9 @@ def test_get_projection_and_samples(cli, transport):
     d = cli("activity", "get", "9000000003").data
     assert d["type"] == "running" and d["distance_km"] == 10.0 and d["pace"] == "4:30/km"
     assert d["file_format"] == "fit" and d["lap_count"] == 10 and d["location"] == "Testville"
+    assert (d["rpe"], d["feel"], d["compliance_score"], d["te_label"]) == (6.0, "strong", 88, "tempo")
+    assert d["gap_pace"] == "4:27/km" and d["avg_cadence_spm"] == 172.0 and d["stride_length_m"] == 1.29
+    assert d["split_summaries"] == [{"type": "interval_active", "count": 3, "distance_m": 3000.0, "duration_s": 780.0}]
     s = cli("activity", "get", "9000000003", "--samples").data["samples"]
     assert s["metrics"] == ["directTimestamp", "directHeartRate", "directSpeed"]
     assert s["count"] == 3 and s["samples"][1]["directHeartRate"] == 125.0

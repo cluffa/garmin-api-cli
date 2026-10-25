@@ -46,6 +46,13 @@ def _data(local: int, fields, values) -> bytes:
     return bytes([local]) + b"".join(struct.pack("<" + code, v) for (_, _, _, code), v in zip(fields, values))
 
 
+def _frame(body: bytes) -> bytes:
+    header = struct.pack("<BBHI4s", 14, 0x20, 2132, len(body), b".FIT")
+    header += struct.pack("<H", crc16(header))
+    content = header + body
+    return content + struct.pack("<H", crc16(content))
+
+
 def build_fit(laps: list[dict]) -> bytes:
     """laps: dicts with start (datetime), elapsed_s, timer_s, distance_m, speed_mps, avg_hr, max_hr, intensity, trigger."""
     start0 = laps[0]["start"] if laps else datetime(2026, 10, 1, tzinfo=UTC)
@@ -64,7 +71,41 @@ def build_fit(laps: list[dict]) -> bytes:
             lap.get("intensity", 0),
             lap.get("trigger", 2),
         ])
-    header = struct.pack("<BBHI4s", 14, 0x20, 2132, len(body), b".FIT")
-    header += struct.pack("<H", crc16(header))
-    content = header + body
-    return content + struct.pack("<H", crc16(content))
+    return _frame(body)
+
+
+# --- generic messages ---------------------------------------------------------
+
+# base type -> (FIT base type byte, struct code, size)
+BASE = {"enum": (0x00, "B", 1), "u8": (0x02, "B", 1), "u16": (0x84, "H", 2), "u32": (0x86, "I", 4), "s32": (0x85, "i", 4)}
+MESG = {"file_id": 0, "session": 18, "lap": 19, "record": 20, "event": 21, "workout": 26, "workout_step": 27,
+        "time_in_zone": 216}
+
+
+def ts(dt: datetime) -> int:
+    return int(dt.timestamp()) - FIT_EPOCH
+
+
+def message(local: int, name: str, fields: list[tuple[int, str, object]]) -> bytes:
+    """One definition + data record. fields: (field number, base type or "str", value or list of values)."""
+    defs, payload = [], b""
+    for num, kind, value in fields:
+        if kind == "str":
+            raw = str(value).encode() + b"\x00"
+            defs.append((num, len(raw), 0x07, None))
+            payload += raw
+            continue
+        base, code, size = BASE[kind]
+        values = value if isinstance(value, list) else [value]
+        defs.append((num, size * len(values), base, None))
+        payload += struct.pack("<" + code * len(values), *values)
+    out = struct.pack("<BBBHB", 0x40 | local, 0, 0, MESG[name], len(defs))
+    for num, size, base, _ in defs:
+        out += struct.pack("<BBB", num, size, base)
+    return out + bytes([local]) + payload
+
+
+def build_messages(start: datetime, records: list[bytes]) -> bytes:
+    """A FIT file from pre-encoded message records (see ``message``), led by a file_id."""
+    body = message(0, "file_id", [(0, "enum", 4), (4, "u32", ts(start))])
+    return _frame(body + b"".join(records))

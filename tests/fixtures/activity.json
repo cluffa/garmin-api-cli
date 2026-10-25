@@ -5,5 +5,8 @@
  "summaryDTO": {"startTimeLocal": "2026-10-20T07:00:00.0", "startTimeGMT": "2026-10-20T11:00:00.0", "distance": 10000.0, "duration": 2700.0,
    "movingDuration": 2690.0, "elapsedDuration": 2750.0, "elevationGain": 55.0, "elevationLoss": 54.0, "averageSpeed": 3.7037, "maxSpeed": 4.6,
    "calories": 720.0, "averageHR": 158.0, "maxHR": 175.0, "minHR": 90.0, "averagePower": 290.0, "normalizedPower": 300.0,
-   "trainingEffect": 3.8, "anaerobicTrainingEffect": 1.2, "activityTrainingLoad": 140.2},
+   "trainingEffect": 3.8, "anaerobicTrainingEffect": 1.2, "activityTrainingLoad": 140.2,
+   "trainingEffectLabel": "TEMPO", "directWorkoutRpe": 60, "directWorkoutFeel": 75, "directWorkoutComplianceScore": 88,
+   "avgGradeAdjustedSpeed": 3.75, "averageRunCadence": 172.4, "strideLength": 129.1, "groundContactTime": 244.0},
+ "splitSummaries": [{"splitType": "INTERVAL_ACTIVE", "noOfSplits": 3, "distance": 3000.0, "duration": 780.0}],
  "locationName": "Testville"}

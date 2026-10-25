@@ -77,6 +77,13 @@ SUPPORT: dict[str, Support] = {
         "(HTTP 404), so typed split labels are limited to the FIT lap trigger",
         old="activity splits",
     ),
+    "activity workout": _s(
+        "Personal API /activity-service/activity/{id}/workouts: the structured workout run during the activity"
+    ),
+    "activity analyze": _s(
+        "local coaching analysis of the official .FIT download: the planned workout, per-step execution vs. "
+        "target, rep stats, even km/mi splits, aerobic decoupling, time in zones, RPE and feel"
+    ),
     # health
     "health steps": _s("Personal API daily steps (range endpoint, 28-day chunks)", old="health steps"),
     "health heart-rate": _s("Personal API daily heart rate (one request per day)", old="health heart-rate"),

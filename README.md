@@ -9,6 +9,9 @@ APIs. The UX contract is the same; the data source is official.
 - `--format json|json-pretty|toon`; `--full` returns raw Garmin payloads instead of slim projections
 - Unified date specs: `today`, `yesterday`, `-7d`, `+7d`, `YYYY-MM-DD`, ranges `start:end` (capped at 366 days unless `--max-days`)
 - `capabilities`: one call lists every command with its official **support status**
+- Coaching-ready: `activity analyze` turns one run into plan vs. execution per workout step, rep-by-rep
+  stats, even splits, drift and time in zones. [docs/COACHING.md](docs/COACHING.md) maps a coach's review
+  checklist to commands and fields, and `capabilities` lists the same recipe under `workflows`.
 - Every feature the official API cannot provide still exists as a command and returns a uniform
   `unsupported` envelope. See [GAP_ANALYSIS.md](GAP_ANALYSIS.md).
 
@@ -94,11 +97,13 @@ Status: **S** supported, **P** partial, **U** unsupported (returns the `unsuppor
 
 | Command | Status | Description |
 |---|---|---|
-| `activity list [--limit N] [--start N] [--type KEY] [--range R] [--miles]` | S | Activities, newest first |
-| `activity get <id> [--miles] [--samples]` | S | One activity; `--samples` adds the time series |
+| `activity list [--limit N] [--start N] [--type KEY] [--range R] [--miles]` | S | Activities, newest first, with training effect, cadence and time in HR zones 1-5 |
+| `activity get <id> [--miles] [--samples]` | S | One activity: summary plus RPE, feel, workout compliance score, running dynamics, typed split summaries. `--samples` adds the time series |
+| `activity workout <id> [--miles]` | S | The structured workout that was run: steps, durations, decoded targets (pace / HR / power), repeats, a one-line summary |
+| `activity analyze <id> [--miles]` | S | Coaching view from the .FIT: plan vs. execution per workout step, rep-by-rep stats, even km/mi splits, aerobic decoupling, time in zones, pauses, RPE and feel. See [docs/COACHING.md](docs/COACHING.md) |
 | `activity download <id> [--format-file fit] [--out PATH] [--zip] [--force]` | P | Original file (.FIT), extracted from Garmin's ZIP. Refuses to overwrite without `--force` |
 | `activity download <id> --format-file tcx\|gpx` | U | No official TCX/GPX export |
-| `activity splits <id> [--miles]` | P | Laps decoded from the official .FIT (pace, HR, power, cadence, intensity, lap trigger) |
+| `activity splits <id> [--miles]` | P | Laps decoded from the official .FIT (workout step, pace, grade-adjusted pace, HR, power, cadence in steps/min, step length, ground contact, intensity, lap trigger) |
 
 ### `health`
 

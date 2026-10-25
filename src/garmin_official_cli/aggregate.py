@@ -9,7 +9,7 @@ from typing import Any
 
 from .dates import week_start
 from .output import dig, round_or_none
-from .projections import M_PER_MI, pace
+from .projections import M_PER_MI, hr_zone_seconds, pace
 
 def _day(value: Any) -> date | None:
     if not isinstance(value, str) or len(value) < 10:
@@ -80,10 +80,15 @@ def activity_day(activity: dict[str, Any]) -> date | None:
 
 
 def running_weekly(activities: Iterable[dict[str, Any]], *, ref: date, first_weekday: int = 0) -> dict[str, Any]:
-    """Weekly running volume: this week, previous week, prior-4-complete-weeks average, longest run."""
+    """Weekly running volume: this week, previous week, prior-4-complete-weeks average, longest run.
+
+    Each week also carries running time in HR zones 1-5, the share of it in zones 1-2 (the
+    easy side of an 80/20 split), and the summed Garmin training load of its runs."""
     this_week = week_start(ref, first_weekday)
     weeks = [this_week - timedelta(weeks=i) for i in range(5)]  # current + 4 complete weeks
-    totals = {w: {"meters": 0.0, "runs": 0, "seconds": 0.0} for w in weeks}
+    totals: dict[date, dict[str, Any]] = {
+        w: {"meters": 0.0, "runs": 0, "seconds": 0.0, "load": 0.0, "zones": [0.0] * 5} for w in weeks
+    }
     longest: dict[str, Any] | None = None
     for a in activities:
         if not is_running(a):
@@ -98,11 +103,23 @@ def running_weekly(activities: Iterable[dict[str, Any]], *, ref: date, first_wee
         totals[w]["meters"] += meters
         totals[w]["runs"] += 1
         totals[w]["seconds"] += float(a.get("duration") or 0)
+        totals[w]["load"] += float(a.get("activityTrainingLoad") or 0)
+        for i, z in enumerate(hr_zone_seconds(a) or []):
+            totals[w]["zones"][i] += z
         if longest is None or meters > longest["meters"]:
             longest = {"meters": meters, "id": a.get("activityId"), "name": a.get("activityName"), "date": day.isoformat()}
 
     def fmt(meters: float) -> dict[str, float]:
         return {"km": round(meters / 1000, 2), "mi": round(meters / M_PER_MI, 2)}
+
+    def intensity(w: date) -> dict[str, Any]:
+        zones = totals[w]["zones"]
+        total = sum(zones)
+        return {
+            "hr_zones_s": [round(z) for z in zones],
+            "z1_z2_pct": round((zones[0] + zones[1]) / total * 100, 1) if total else None,
+            "training_load": round(totals[w]["load"], 1),
+        }
 
     prior = [totals[w]["meters"] for w in weeks[1:]]
     return {
@@ -117,7 +134,7 @@ def running_weekly(activities: Iterable[dict[str, Any]], *, ref: date, first_wee
             else None
         ),
         "weeks": [
-            {"week_start": w.isoformat(), **fmt(totals[w]["meters"]), "runs": totals[w]["runs"]}
+            {"week_start": w.isoformat(), **fmt(totals[w]["meters"]), "runs": totals[w]["runs"], **intensity(w)}
             for w in reversed(weeks)
         ],
     }

@@ -28,6 +28,8 @@ def test_weekly_running(cli, transport):
     assert d["longest_run"]["id"] == 9000000001
     assert d["four_week_avg"]["km"] == round(21097.5 / 4 / 1000, 2)
     assert len(d["weeks"]) == 5
+    this = d["weeks"][-1]
+    assert this["hr_zones_s"] == [120, 600, 900, 1000, 80] and this["z1_z2_pct"] == 26.7 and this["training_load"] == 140.2
     s = cli("stats", "weekly", "--week-start", "sunday").data
     assert s["week_start"] == "2026-10-18" and s["this_week"]["runs"] == 2
 

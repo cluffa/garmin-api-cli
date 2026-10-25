@@ -67,6 +67,22 @@ def command_table(root: click.Group, state: State) -> list[dict[str, Any]]:
     return rows
 
 
+# Command sequences for common agent tasks; docs/COACHING.md maps each coaching need to a field.
+WORKFLOWS = {
+    "coach_review_month": [
+        "stats weekly  # volume, longest run, weekly HR-zone time, z1_z2_pct, training load",
+        "activity list --range -30d:today --limit 200  # per run: training effect, load, HR zones, cadence",
+        "health hrv -30d:today; health sleep -30d:today; health heart-rate -30d:today  # recovery trend",
+        "activity analyze <id>  # per key run: plan vs. execution, reps, even splits, drift, zones, RPE",
+        "activity get <id>  # adds compliance score, stamina, Body Battery change, typed split summaries",
+    ],
+    "review_one_workout": [
+        "activity workout <id>  # what was planned (API)",
+        "activity analyze <id>  # how each step went (FIT); pass --miles for mile splits",
+    ],
+}
+
+
 @click.command("capabilities", help="One-call discovery: every command with support status, the workout schema, config.")
 @click.pass_context
 def capabilities(ctx: click.Context) -> None:
@@ -89,6 +105,7 @@ def capabilities(ctx: click.Context) -> None:
             "date_specs": ["today", "yesterday", "tomorrow", "-7d", "+7d", "YYYY-MM-DD", "START:END"],
             "max_days_default": DEFAULT_MAX_DAYS,
             "exit_codes": {"0": "success", "1": "internal", "2": "usage", "3": "auth", "4": "api / unsupported"},
+            "workflows": WORKFLOWS,
             "commands": rows,
             "unsupported": [r["command"] for r in rows if r["status"] == UNSUPPORTED],
             "workout_schema": SCHEMA,

@@ -55,6 +55,8 @@ pending), `enterprise` (not applied), `local` (pure local logic), or `none` (no 
 | `activity get <id>` | `activity get` | supported | personal | Personal API activity summary. The new `--samples` flag adds the detail time series. |
 | `activity download <id> --format-file fit` | `activity download` | partial | personal | Official delivery is the **original file** (a ZIP holding the .FIT for device recordings). The CLI extracts it; `--zip` keeps Garmin's ZIP. |
 | `activity download --format-file tcx\|gpx` | `activity download --format-file tcx\|gpx` | **unsupported** | none | No official API exports TCX/GPX. The Connect export endpoints return 404 on the Personal API. Download the FIT and convert it locally. |
+| (new) | `activity workout <id>` | supported | personal | Personal API `/activity-service/activity/{id}/workouts` (documented in Garmin's Personal API spec): the structured workout run during the activity. Saved library workouts that were never run stay out of reach (see `workout`). |
+| (new) | `activity analyze <id>` | supported | personal | Local coaching analysis of the official .FIT: the embedded workout plan, each executed step vs. its target, rep stats, even km/mi splits from the per-second record, decoupling, the watch's time in zones, RPE and feel. |
 | `activity splits <id>` | `activity splits` | partial | personal | Laps are decoded locally from the official .FIT (lap messages: distance, time, pace, HR, power, cadence, intensity). The Connect splits endpoints return 404, so the old "split type" labels are limited to the FIT `lap_trigger` (manual / distance / time / session_end ...). |
 
 ### health

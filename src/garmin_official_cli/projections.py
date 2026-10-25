@@ -12,6 +12,7 @@ from typing import Any
 from .output import as_list, dig, pick, round_or_none
 
 M_PER_MI = 1609.344
+FEEL = {0: "very_weak", 25: "weak", 50: "normal", 75: "strong", 100: "very_strong"}
 
 
 def distance(meters: Any, miles: bool) -> float | None:
@@ -37,6 +38,28 @@ def ms_to_iso(ms: Any) -> str | None:
     return datetime.fromtimestamp(ms / 1000, UTC).replace(tzinfo=None).isoformat(timespec="seconds")
 
 
+def rpe(value: Any) -> float | None:
+    """Garmin stores self-reported RPE as 10-100; the athlete picked 1-10."""
+    v = round_or_none(value, 1)
+    return round(v / 10, 1) if v is not None else None
+
+
+def feel(value: Any) -> str | None:
+    """Self-reported workout feel, stored as 0/25/50/75/100."""
+    v = round_or_none(value, 0)
+    return FEEL.get(int(v), str(int(v))) if v is not None else None
+
+
+def lower(value: Any) -> str | None:
+    return value.lower() if isinstance(value, str) else None
+
+
+def hr_zone_seconds(a: dict[str, Any]) -> list[float] | None:
+    """Activity-search time in HR zones 1-5, in seconds."""
+    zones = [round_or_none(a.get(f"hrTimeInZone_{i}"), 0) for i in range(1, 6)]
+    return [z or 0 for z in zones] if any(z is not None for z in zones) else None
+
+
 # --- activities ---------------------------------------------------------------
 
 
@@ -56,7 +79,24 @@ def activity_summary(a: dict[str, Any], *, miles: bool = False) -> dict[str, Any
         "calories": round_or_none(a.get("calories"), 0),
         "elevation_gain_m": round_or_none(a.get("elevationGain"), 1),
         "training_load": round_or_none(a.get("activityTrainingLoad"), 1),
+        "aerobic_te": round_or_none(a.get("aerobicTrainingEffect"), 1),
+        "te_label": lower(a.get("trainingEffectLabel")),
+        "avg_cadence_spm": round_or_none(a.get("averageRunningCadenceInStepsPerMinute"), 0),
+        "hr_zones_s": hr_zone_seconds(a),
     }
+
+
+def split_summaries(rows: Any) -> list[dict[str, Any]]:
+    return [
+        {
+            "type": lower(r.get("splitType")),
+            "count": r.get("noOfSplits"),
+            "distance_m": round_or_none(r.get("distance"), 1),
+            "duration_s": round_or_none(r.get("duration"), 1),
+        }
+        for r in as_list(rows)
+        if isinstance(r, dict)
+    ]
 
 
 def activity_detail(a: dict[str, Any], *, miles: bool = False) -> dict[str, Any]:
@@ -84,7 +124,24 @@ def activity_detail(a: dict[str, Any], *, miles: bool = False) -> dict[str, Any]
         "elevation_loss_m": round_or_none(s.get("elevationLoss"), 1),
         "aerobic_te": round_or_none(s.get("trainingEffect"), 1),
         "anaerobic_te": round_or_none(s.get("anaerobicTrainingEffect"), 1),
+        "te_label": lower(s.get("trainingEffectLabel")),
+        "aerobic_te_message": lower(s.get("aerobicTrainingEffectMessage")),
+        "anaerobic_te_message": lower(s.get("anaerobicTrainingEffectMessage")),
         "training_load": round_or_none(s.get("activityTrainingLoad"), 1),
+        "rpe": rpe(s.get("directWorkoutRpe")),
+        "feel": feel(s.get("directWorkoutFeel")),
+        "compliance_score": s.get("directWorkoutComplianceScore"),
+        "gap_pace": pace(s.get("avgGradeAdjustedSpeed"), miles),
+        "avg_cadence_spm": round_or_none(s.get("averageRunCadence"), 0),
+        "stride_length_m": round(v / 100, 2) if (v := round_or_none(s.get("strideLength"), 2)) is not None else None,
+        "gct_ms": round_or_none(s.get("groundContactTime"), 0),
+        "vertical_oscillation_cm": round_or_none(s.get("verticalOscillation"), 1),
+        "vertical_ratio_pct": round_or_none(s.get("verticalRatio"), 1),
+        "intensity_min": {"moderate": s.get("moderateIntensityMinutes"), "vigorous": s.get("vigorousIntensityMinutes")},
+        "body_battery_change": s.get("differenceBodyBattery"),
+        "stamina_start_pct": round_or_none(s.get("beginPotentialStamina"), 0),
+        "stamina_end_pct": round_or_none(s.get("endPotentialStamina"), 0),
+        "split_summaries": split_summaries(a.get("splitSummaries")),
         "lap_count": dig(a, "metadataDTO.lapCount"),
         "file_format": dig(a, "metadataDTO.fileFormat.formatKey"),
         "device_manufacturer": dig(a, "metadataDTO.manufacturer"),

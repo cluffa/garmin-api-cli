@@ -1,4 +1,4 @@
-"""`activity`: list / get / download (.FIT) / splits (FIT laps)."""
+"""`activity`: list / get / download (.FIT) / splits (FIT laps) / workout (plan) / analyze (coaching view)."""
 
 from __future__ import annotations
 
@@ -12,7 +12,8 @@ from .. import endpoints as ep
 from ..client import PersonalApiClient
 from ..dates import DateRange
 from ..errors import ApiError, UnsupportedError, UsageError
-from ..fit import decode_laps, extract_original, splits_from_download
+from ..coaching import Context, api_steps, workout_view
+from ..fit import analysis_from_download, decode_fit, decode_laps, extract_original, splits_from_download
 from ..models import NONE
 from ..projections import activity_detail, activity_samples, activity_summary
 from .common import State, max_days_option, pass_state, resolve_range
@@ -144,3 +145,49 @@ def splits_cmd(state: State, activity_id: str, miles: bool) -> None:
         state.ok({"id": int(aid), "file": original.name, "lap_mesgs": decode_laps(original.content)})
         return
     state.ok({"id": int(aid), **splits_from_download(payload, miles=miles)})
+
+
+@activity.command(
+    "workout",
+    help="The structured workout that was run during an activity (plan steps, targets, repeats). Empty if none.",
+)
+@click.argument("activity_id")
+@click.option("--miles", is_flag=True, help="Distances in miles, pace per mile.")
+@pass_state
+def workout_cmd(state: State, activity_id: str, miles: bool) -> None:
+    aid = _activity_id(activity_id)
+    workouts = state.client.get_json(ep.ACTIVITY_WORKOUTS, activity_id=aid)
+    if state.full:
+        state.ok(workouts)
+        return
+    ctx = Context()  # % of max HR / FTP targets stay as percentages; `activity analyze` resolves them
+    state.ok(
+        {
+            "id": int(aid),
+            "workouts": [
+                {
+                    "index": w.get("index"),
+                    "created_utc": w.get("timeCreated"),
+                    **workout_view(w.get("workoutName"), None, w.get("sport"), api_steps(w.get("steps") or []), ctx, miles),
+                }
+                for w in workouts or []
+            ],
+        }
+    )
+
+
+@activity.command(
+    "analyze",
+    help="Coaching view from the activity's .FIT: plan vs. execution per step, rep stats, even splits, drift, zones.",
+)
+@click.argument("activity_id")
+@click.option("--miles", is_flag=True, help="Distances in miles, pace per mile, even splits per mile.")
+@pass_state
+def analyze_cmd(state: State, activity_id: str, miles: bool) -> None:
+    aid = _activity_id(activity_id)
+    payload = state.client.get_bytes(ep.ACTIVITY_DOWNLOAD, activity_id=aid)
+    if state.full:
+        original = extract_original(payload)
+        state.ok({"id": int(aid), "file": original.name, "messages": decode_fit(original.content)})
+        return
+    state.ok({"id": int(aid), **analysis_from_download(payload, miles=miles)})

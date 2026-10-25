@@ -14,6 +14,7 @@ where each fact comes from and separates **documented facts**, **observed facts*
 | S4 | <https://developerportal.garmin.com/developer-programs/connect-api> | Returns HTTP 403 to unauthenticated fetches. Not readable. |
 | S5 | Garmin developer forum thread "POST request to training API create workout endpoint returns an undescriptive 500 error" (forums.garmin.com, Connect IQ section) | Third-party report: Training API workout create is `POST https://apis.garmin.com/training-api/workout`, with body fields `workoutName`, `description`, `sport`, `steps[]` (`durationType`, `targetType`, `intensity`). |
 | S6 | `developerportal.garmin.com/sites/default/files/OAuth2PKCE_1.pdf` (search result title "Garmin Connect Developer Program OAuth2.0 PKCE Specification") | Shows the Business tiers use OAuth 2.0 + PKCE and `Authorization: Bearer`. The PDF itself was not fetched in full. |
+| S8 | <https://developer.garmin.com/gc-developer-program/personal/swagger-docs/> | **Garmin's published Personal API spec.** The page renders an OpenAPI 3.0.1 document (title "Garmin Connect Personal API", server `https://personal.connectapi.garmin.com`) embedded in its JavaScript bundle: 26 GET paths, 109 schemas. Read 2026-10-25. It supersedes S2 as the endpoint reference. |
 | S7 | Training API reference PDF (developer portal, also mirrored on Scribd) | Not reachable: fetch timed out / login-gated. Field details below marked *assumption* come from general knowledge of this document, not a fresh read. |
 
 ## Personal tier (the one this CLI uses)
@@ -72,7 +73,45 @@ where each fact comes from and separates **documented facts**, **observed facts*
 - All endpoints above returned 200 with the expected JSON, except where the shape was empty (no
   hydration data).
 - **Extra endpoint that works**: `/activity-service/activity/{id}/details` (metric descriptors plus sample
-  rows). Used by `activity get --samples`.
+  rows). Used by `activity get --samples`. It is **not** in Garmin's published spec (S8), so it may change
+  without notice.
+
+### Published spec (S8, read 2026-10-25)
+
+- Every path the CLI calls is in the spec except `/activity-service/activity/{id}/details` (above).
+- Spec paths with no dedicated command (reach them with `api get`): `/usersummary-service/usersummary/daily`,
+  `/weight-service/weight/all/{startDate}/{endDate}`, plus the hydration, weight goal, nutrition, fitness age,
+  SpO2, menstrual cycle and wellness activity paths already listed above.
+- `/activity-service/activity/{id}/workouts` returns `ActivityWorkoutDTO[]` (`workoutName`, `sport`,
+  `timeCreated`, `steps[]` of `WorkoutStepDTO`). Verified live 2026-10-25: it returns the structured workout a
+  run was recorded with, and `[]` for free runs. Used by `activity workout`.
+- `WorkoutStepDTO` target encoding (spec text): `targetValue` 0 means a custom range in
+  `targetValueLow`/`targetValueHigh`, nonzero selects a zone. Speed is m/s. Heart rate is % of max HR, or
+  bpm + 100 (250 = 150 bpm). Power is % of FTP, or watts + 1000. Running cadence is steps/min. Repeat steps
+  use `durationType` `REPEAT_UNTIL_STEPS_CMPLT` with `durationValue` = first repeated step index and
+  `targetValue` = repeat count.
+- `ActivitySummaryDTO.summaryDTO` carries `directWorkoutRpe` (10-100, the athlete's 1-10 RPE times ten),
+  `directWorkoutFeel` (0/25/50/75/100), `directWorkoutComplianceScore`, `trainingEffectLabel`, running
+  dynamics (`strideLength` cm, `groundContactTime` ms, `verticalOscillation` cm, `verticalRatio`),
+  `avgGradeAdjustedSpeed`, stamina and Body Battery change. The search results carry `hrTimeInZone_1..5`
+  (seconds). `activity get`/`activity list` project these.
+
+### FIT file facts (observed in real recordings, 2026-10-25)
+
+- A run recorded as a structured workout embeds `workout` (name, description) and `workout_step` messages
+  (raw units: time ms, distance cm, speed target m/s × 1000). Each lap carries `wkt_step_index`.
+- Auto-lap still fires inside long workout steps (a 2 mi warmup is two 1 mi laps with the same
+  `wkt_step_index`). The watch also writes one `split` message of type `interval_*` per executed step with
+  `first_lap_index`/`num_laps`; `activity analyze` groups laps with those, and falls back to merging
+  consecutive laps of the same step when a split is missing (seen for some warmups).
+- `time_in_zone` messages give session and per-lap time in HR zones with the boundaries used
+  (`hr_zone_high_boundary`, `hr_calc_type`), plus FTP and power buckets.
+- `session.workout_rpe` / `workout_feel` match the API's `directWorkoutRpe` / `directWorkoutFeel`.
+- Running cadence fields count one foot; steps/min = 2 × (`cadence` + `fractional_cadence`).
+- String fields can come back from the SDK as a list split on NUL bytes, followed by garbage from a reused
+  device buffer (e.g. `['Easy 10', '', '20', '', 'des']`). The first non-empty item is the real text.
+- Timer pauses are `event` messages (`timer` / `stop_all`, then `start`); records are not written while
+  paused.
 - **Range limits** (a longer span returns HTTP 400, or 500 for daily summaries):
 
   | Endpoint | Max days per call (measured) | `max_days` in `endpoints.py` |
