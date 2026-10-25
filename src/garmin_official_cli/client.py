@@ -126,6 +126,8 @@ def parse_key_text(text: str) -> str | None:
 
 
 def file_mode(path: Path) -> int | None:
+    if os.name != "posix":  # Windows has no POSIX modes; st_mode reports 0o666 regardless of ACLs
+        return None
     try:
         return stat.S_IMODE(path.stat().st_mode)
     except OSError:

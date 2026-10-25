@@ -28,6 +28,17 @@ def test_status_from_env_file_reports_mode(cli, monkeypatch, tmp_path):
     assert info["exists"] and info["mode"] == "0644" and info["secure"] is False
 
 
+@pytest.mark.skipif(os.name == "posix", reason="Windows-only: no POSIX file modes")
+def test_status_from_env_file_mode_unknown_on_windows(cli, monkeypatch, tmp_path):
+    monkeypatch.delenv("GARMIN_PERSONAL_API_KEY")
+    f = tmp_path / "home/.config/garmin/personal-api-key.env"
+    f.parent.mkdir(parents=True)
+    f.write_text(f"GARMIN_PERSONAL_API_KEY={FAKE_KEY}\n")
+    d = cli("auth", "status").data
+    info = d["key_files"][0]
+    assert info["exists"] and info["mode"] is None and info["secure"] is None
+
+
 def test_status_unconfigured_is_auth_error(cli, monkeypatch):
     monkeypatch.delenv("GARMIN_PERSONAL_API_KEY")
     r = cli("auth", "status")
