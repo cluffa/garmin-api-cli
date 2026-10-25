@@ -33,6 +33,9 @@ uv run garmin auth set-key      # prints the steps below
    Keys start with `GCDC_` and are valid for one year. Only one key can exist at a time.
 2. Store it in `~/.config/garmin/personal-api-key.env` (directory 700, file **600**) as the single line
    `GARMIN_PERSONAL_API_KEY=<key>`. Use an editor, not `echo`, so the key stays out of shell history.
+   On Windows, file modes don't apply: restrict the file to your account with
+   `icacls %USERPROFILE%\.config\garmin\personal-api-key.env /inheritance:r /grant:r "%USERNAME%:F"`.
+   `auth status` reports `mode` and `secure` as `null` there, since it cannot check ACLs.
 3. Check it: `uv run garmin auth status --verify`.
 
 Key lookup order: `$GARMIN_PERSONAL_API_KEY` → `$GARMIN_PERSONAL_API_KEY_FILE` →
@@ -81,7 +84,7 @@ Status: **S** supported, **P** partial, **U** unsupported (returns the `unsuppor
 
 | Command | Status | Description |
 |---|---|---|
-| `auth status [--verify]` | S | Is a key configured, from where, file mode, token cache, expiry note. `--verify` does one live exchange. Never prints the key. Exit 3 if no key is configured. |
+| `auth status [--verify]` | S | Is a key configured, from where, file mode (`null` on Windows), token cache, expiry note. `--verify` does one live exchange. Never prints the key. Exit 3 if no key is configured. |
 | `auth set-key` | S | Setup guidance only; reads and writes nothing |
 | `auth refresh` | S | Force a new bearer token |
 | `auth logout` | S | Delete the cached bearer token |
