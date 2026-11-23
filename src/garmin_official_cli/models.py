@@ -89,7 +89,29 @@ SUPPORT: dict[str, Support] = {
     "health heart-rate": _s("Personal API daily heart rate (one request per day)", old="health heart-rate"),
     "health sleep": _s("Personal API daily sleep / sleep summaries (31-day chunks)", old="health sleep"),
     "health stress": _s("Personal API daily stress (range endpoint, 28-day chunks)", old="health stress"),
-    "health weight": _s("Personal API weight range (366-day chunks)", old="health weight"),
+    "health weight": _s(
+        "Personal API weight range (366-day chunks); --entries lists individual weigh-ins from weight/all",
+        old="health weight",
+    ),
+    "health hydration": _s("Personal API daily hydration (31-day chunks); empty unless hydration is logged in Connect"),
+    "health wellness-activity": _p(
+        "Personal API wellness activity summaries; endpoint verified live 2026-11-23 (HTTP 200) but returned [] "
+        "for every probed range on this account, so records pass through unprojected until a recorded example exists"
+    ),
+    "health weight-goal": _s("Personal API effective weight goal (goal-service, chunked at the global range cap)"),
+    "health spo2": _s("Personal API daily SpO2 + altitude acclimation (one request per day)"),
+    "health fitness-age": _s("Personal API fitness age (one request per day)"),
+    "health nutrition": _s("Personal API food logs: daily/meal goals + logged foods (one request per day)"),
+    "health hr-zones": _s("Personal API heart rate zones v2, floors expanded into per-sport ranges"),
+    "health settings": _s("Personal API user profile settings (units/formats; the opaque display name is not projected)"),
+    "health menstrual-summary": _p(
+        "Personal API menstrual cycle summary; verified live 2026-11-23 (HTTP 200, null on this account: no cycle "
+        "data), so the payload passes through unprojected until a recorded example exists"
+    ),
+    "health menstrual-day": _p(
+        "Personal API menstrual cycle day view (todayDate = today); verified live 2026-11-23 (HTTP 200, null on "
+        "this account), so the payload passes through unprojected until a recorded example exists"
+    ),
     "health hrv": _s("Personal API HRV summary + readings (single day) or HRV summaries (range)", old="health hrv"),
     "health body-battery": _s(
         "Personal API Body Battery daily reports (31-day chunks); available on the Personal tier even though "
@@ -100,6 +122,10 @@ SUPPORT: dict[str, Support] = {
     "health weekly-stress": _s("local weekly aggregation over official daily stress", old="health weekly-stress"),
     # stats
     "stats summary": _s("Personal API daily summaries (v2)", old="stats summary"),
+    "stats user-summary": _s(
+        "Personal API per-day user summary (v1 usersummary/daily?calendarDate=, one request per day): "
+        "calories consumed/remaining, floors, stress durations, Body Battery during sleep"
+    ),
     "stats weekly": _s("local aggregation of official running activities", old="stats weekly"),
     "stats progress": _s("local aggregation of official activities between two dates", old="stats progress"),
     "stats records": _u(f"personal records are {NOT_AN_OFFICIAL_TYPE}", old="stats records"),

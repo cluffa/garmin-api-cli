@@ -71,23 +71,32 @@ HRV_SUMMARIES = Endpoint("hrv_summaries", "GET", "/hrv-service/hrv/daily/{start}
 WEIGHT_RANGE = Endpoint(
     "weight_range", "GET", "/weight-service/weight/range/{start}/{end}", max_days=366, params={"includeAll": "true"}
 )
+WEIGHT_ALL = Endpoint("weight_all", "GET", "/weight-service/weight/all/{start}/{end}", max_days=366)
 # 60 days verified; 90 returned HTTP 500. 31 keeps a margin.
 DAILY_SUMMARIES = Endpoint("daily_summaries", "GET", "/usersummary-service/v2/dailysummaries", max_days=31)
-
-# Other Personal API GET endpoints Garmin's client wraps. The CLI has no dedicated
-# commands for them; call them with `garmin api get PATH`.
-OTHER_PERSONAL_PATHS = (
-    "/usersummary-service/stats/hydration/daily/{start}/{end}",
-    "/goal-service/goal/user/effective/weightgoal/{start}/{end}",
-    "/nutrition-service/food/logs/{date}",
-    "/userprofile-service/userprofile/settings",
-    "/biometric-service/heartRateZones/v2",
-    "/fitnessage-service/fitnessage/v2/{date}",
-    "/wellness-service/wellness/daily/spo2acclimation/{date}",
-    "/wellnessactivity-service/activity/summary/range/{start}/{end}",
-    "/periodichealth-service/menstrualcycle/summary/{date}",
-    "/periodichealth-service/menstrualcycle/dayview/{date}?todayDate={today}",
+USER_SUMMARY = Endpoint("user_summary", "GET", "/usersummary-service/usersummary/daily")  # ?calendarDate=
+# 31 days is Garmin's documented cap for hydration (Garmin's client + S8 clients agree);
+# a 327-day single call returned HTTP 400 on 2026-11-23.
+HYDRATION = Endpoint("hydration", "GET", "/usersummary-service/stats/hydration/daily/{start}/{end}", max_days=31)
+# A 90-day call returned the goal on 2026-11-23; no tighter cap measured, so chunk at the global cap.
+WEIGHT_GOAL = Endpoint("weight_goal", "GET", "/goal-service/goal/user/effective/weightgoal/{start}/{end}", max_days=366)
+FOOD_LOGS = Endpoint("food_logs", "GET", "/nutrition-service/food/logs/{date}")
+USER_SETTINGS = Endpoint("user_settings", "GET", "/userprofile-service/userprofile/settings")
+HR_ZONES = Endpoint("hr_zones", "GET", "/biometric-service/heartRateZones/v2")
+FITNESS_AGE = Endpoint("fitness_age", "GET", "/fitnessage-service/fitnessage/v2/{date}")
+SPO2_ACCLIMATION = Endpoint("spo2_acclimation", "GET", "/wellness-service/wellness/daily/spo2acclimation/{date}")
+WELLNESS_ACTIVITIES = Endpoint(
+    "wellness_activities", "GET", "/wellnessactivity-service/activity/summary/range/{start}/{end}", max_days=366
 )
+MENSTRUAL_SUMMARY = Endpoint("menstrual_summary", "GET", "/periodichealth-service/menstrualcycle/summary/{date}")
+MENSTRUAL_DAYVIEW = Endpoint(
+    "menstrual_dayview", "GET", "/periodichealth-service/menstrualcycle/dayview/{date}"
+)  # ?todayDate= is supplied by the command
+
+# Personal API GET endpoints with no dedicated command; call them with `garmin api get PATH`.
+# (Empty since 2026-11-23: every path Garmin's client wraps now has a command. Kept so
+# future spec paths have an obvious home.)
+OTHER_PERSONAL_PATHS: tuple[str, ...] = ()
 
 # --- Training API (Starter Business tier, push/cloud model) ---------------------
 TRAINING_WORKOUT_CREATE = Endpoint(
