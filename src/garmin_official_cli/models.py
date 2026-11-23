@@ -103,6 +103,10 @@ SUPPORT: dict[str, Support] = {
     "health fitness-age": _s("Personal API fitness age (one request per day)"),
     "health nutrition": _s("Personal API food logs: daily/meal goals + logged foods (one request per day)"),
     "health hr-zones": _s("Personal API heart rate zones v2, floors expanded into per-sport ranges"),
+    "health vo2max": _s(
+        "Personal API VO2 max estimates (metrics-service maxmet/daily, 366-day chunks); not in Garmin's client "
+        "or published spec — live-probed 2026-11-23 (the maxmet/latest and racepredictions paths 404)"
+    ),
     "health settings": _s("Personal API user profile settings (units/formats; the opaque display name is not projected)"),
     "health menstrual-summary": _p(
         "Personal API menstrual cycle summary; verified live 2026-11-23 (HTTP 200, null on this account: no cycle "

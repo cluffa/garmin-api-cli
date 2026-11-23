@@ -245,6 +245,26 @@ def hrv_summary(s: dict[str, Any] | None) -> dict[str, Any] | None:
     )
 
 
+def vo2max_day(d: dict[str, Any]) -> dict[str, Any]:
+    """One maxmet/daily record: {generic: {...} | null, cycling: {...} | null}.
+
+    Live-verified 2026-11-23. The list is sparse — only days where Garmin
+    recomputed an estimate appear. `generic` carries the running estimate
+    (sport/subSport say which activity family produced it).
+    """
+    generic = d.get("generic") or {}
+    cycling = d.get("cycling") or {}
+    return {
+        "date": generic.get("calendarDate") or cycling.get("calendarDate"),
+        "vo2max": generic.get("vo2MaxValue"),
+        "vo2max_precise": generic.get("vo2MaxPreciseValue"),
+        "sport": generic.get("sport"),
+        "sub_sport": generic.get("subSport"),
+        "cycling_vo2max": cycling.get("vo2MaxValue"),
+        "cycling_vo2max_precise": cycling.get("vo2MaxPreciseValue"),
+    }
+
+
 def hrv_day(d: dict[str, Any] | None) -> dict[str, Any] | None:
     if not d:
         return None

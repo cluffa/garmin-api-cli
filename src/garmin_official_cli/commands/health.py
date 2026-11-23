@@ -27,6 +27,7 @@ from ..projections import (
     steps_day,
     stress_day,
     user_settings,
+    vo2max_day,
     weight_day,
     weight_entry,
     weight_goal,
@@ -37,7 +38,7 @@ from .common import DATE_ARGS, State, fetch_chunks, fetch_list, max_days_option,
 @click.group(
     "health",
     help="Health/wellness data: steps, heart rate, sleep, stress, weight, HRV, Body Battery, "
-    "hydration, SpO2, fitness age, HR zones, nutrition, weight goals, profile settings, menstrual cycle.",
+    "hydration, SpO2, fitness age, HR zones, VO2 max, nutrition, weight goals, profile settings, menstrual cycle.",
 )
 def health() -> None:
     pass
@@ -59,6 +60,11 @@ def _list_command(name: str, endpoint: ep.Endpoint, project, help_text: str, def
 _list_command("steps", ep.DAILY_STEPS, steps_day, "Daily steps over a date or range (28-day request chunks).")
 _list_command("stress", ep.DAILY_STRESS, stress_day, "Daily stress over a date or range (28-day request chunks).")
 _list_command("body-battery", ep.BODY_BATTERY, body_battery_day, "Body Battery daily reports over a date or range.")
+_list_command(
+    "vo2max", ep.MAXMET_DAILY, vo2max_day,
+    "VO2 max estimates over a date or range (366-day chunks). Sparse: only days with a new estimate appear.",
+    default="-30d:today",
+)
 _list_command(
     "hydration", ep.HYDRATION, hydration_day,
     "Daily hydration over a date or range (31-day request chunks). Empty unless hydration is logged in Garmin Connect.",
