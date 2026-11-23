@@ -155,6 +155,35 @@ def test_hydration_empty(cli, transport):
     assert cli("health", "hydration", "-6d:today").data == []
 
 
+MAXMET = "/metrics-service/metrics/maxmet/daily/"
+
+
+def maxmet_day(d, i):
+    cycling = None
+    if i % 2 == 1:
+        cycling = {"calendarDate": d.isoformat(), "vo2MaxPreciseValue": 48.5, "vo2MaxValue": 48.0,
+                   "sport": "CYCLING", "subSport": "GENERIC"}
+    return {
+        "generic": {"calendarDate": d.isoformat(), "vo2MaxPreciseValue": 50.0 + i * 0.1, "vo2MaxValue": 50.0,
+                    "sport": "RUNNING", "subSport": "GENERIC"},
+        "cycling": cycling,
+    }
+
+
+def test_vo2max_single_range_and_default(cli, transport):
+    route_range(transport, MAXMET, maxmet_day)
+    r = cli("health", "vo2max", "2026-10-21")
+    assert r.data == [{"date": "2026-10-21", "vo2max": 50.0, "vo2max_precise": 50.0, "sport": "RUNNING",
+                       "sub_sport": "GENERIC", "cycling_vo2max": None, "cycling_vo2max_precise": None}]
+    r = cli("health", "vo2max", "2026-10-19:2026-10-21")
+    assert [x["vo2max_precise"] for x in r.data] == [50.0, 50.1, 50.2]
+    assert r.data[1]["cycling_vo2max"] == 48.0 and r.data[1]["cycling_vo2max_precise"] == 48.5
+    r = cli("health", "vo2max")  # default range -30d:today
+    assert len(r.data) == 31
+    full = cli("--full", "health", "vo2max", "2026-10-21").data
+    assert full[0]["generic"]["calendarDate"] == "2026-10-21" and full[0]["cycling"] is None
+
+
 def test_weight_entries(cli, transport):
     transport.add("GET", "/weight-service/weight/all/2026-09-21/2026-10-21", fixture("weight_all.json"))
     d = cli("health", "weight", "--entries").data  # default range -30d:today

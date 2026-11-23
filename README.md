@@ -121,6 +121,7 @@ Status: **S** supported, **P** partial, **U** unsupported (returns the `unsuppor
 | `health fitness-age [range]` | S | Fitness age + components; 1 request per day |
 | `health nutrition [range]` | S | Food logs: daily/meal goals + logged foods; 1 request per day |
 | `health hr-zones` | S | HR zone definitions per sport, floors expanded into ranges; 1 request |
+| `health vo2max [range]` (default `-30d:today`) | S | VO2 max estimates (`maxmet/daily`); sparse — only days with a new estimate; 1 request per 366 days |
 | `health weight-goal [range]` | S | Effective weight goal; chunked at the global range cap |
 | `health settings` | S | Profile settings: units, formats, time zone, hydration containers; 1 request |
 | `health wellness-activity [range]` | P | Wellness activity summaries, records unprojected (endpoint returns `[]` on this account so far) |

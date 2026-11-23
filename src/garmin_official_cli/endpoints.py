@@ -68,6 +68,13 @@ BODY_BATTERY = Endpoint(
 DAILY_HEART_RATE = Endpoint("daily_heart_rate", "GET", "/wellness-service/wellness/dailyHeartRate")  # ?date=
 HRV_DAY = Endpoint("hrv_day", "GET", "/hrv-service/hrv/{date}")
 HRV_SUMMARIES = Endpoint("hrv_summaries", "GET", "/hrv-service/hrv/daily/{start}/{end}", max_days=366)
+# Not in Garmin's client or the published spec (S8): found by live probe 2026-11-23.
+# A 366-day span works; 400 days returned HTTP 400. The sibling paths
+# /metrics-service/metrics/maxmet/latest/{date} and every racepredictions path 404.
+MAXMET_DAILY = Endpoint(
+    "maxmet_daily", "GET", "/metrics-service/metrics/maxmet/daily/{start}/{end}",
+    max_days=366, source=SOURCE_LIVE_PROBE,
+)
 WEIGHT_RANGE = Endpoint(
     "weight_range", "GET", "/weight-service/weight/range/{start}/{end}", max_days=366, params={"includeAll": "true"}
 )

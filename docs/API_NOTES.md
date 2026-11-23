@@ -77,10 +77,18 @@ where each fact comes from and separates **documented facts**, **observed facts*
 - **Extra endpoint that works**: `/activity-service/activity/{id}/details` (metric descriptors plus sample
   rows). Used by `activity get --samples`. It is **not** in Garmin's published spec (S8), so it may change
   without notice.
+- **VO2 max endpoint (probed 2026-11-23)**: `/metrics-service/metrics/maxmet/daily/{start}/{end}` returns
+  200 with `[{generic: {calendarDate, vo2MaxValue, vo2MaxPreciseValue, sport, subSport}, cycling: {...} | null}]`,
+  sparse (only days with a new estimate). A 366-day span works; 400 days returned HTTP 400. Used by
+  `health vo2max`. It is in neither Garmin's client (S2) nor the published spec (S8), so it may change
+  without notice. Its siblings do **not** work: `/metrics-service/metrics/maxmet/latest/{date}` and every
+  probed `racepredictions` path (`latest/{date}`, `latest/WEEK`, `latest/MONTH`, `current/{date}`,
+  `daily/{start}/{end}`, bare `{date}`) returned 404 — Garmin's race predictor is not exposed.
 
 ### Published spec (S8, read 2026-10-25)
 
-- Every path the CLI calls is in the spec except `/activity-service/activity/{id}/details` (above).
+- Every path the CLI calls is in the spec except `/activity-service/activity/{id}/details` (above) and
+  `/metrics-service/metrics/maxmet/daily/{start}/{end}` (VO2 max, live-probed 2026-11-23).
 - Spec paths with no dedicated command: **none since 2026-11-23** — the usersummary/daily and weight/all
   paths, plus the hydration, weight goal, nutrition, fitness age, SpO2, menstrual cycle and wellness
   activity paths, all have commands now (see the table above and the S9 probes below).
@@ -178,12 +186,14 @@ command. Results (account: Alex's; shapes inspected, no personal data stored —
   | daily summaries v2 | ≥ 60 (90 → 500) | 31 (safety margin) |
   | HRV summaries | ≥ 366 | 366 |
   | weight range | ≥ 366 | 366 |
+  | maxmet daily (VO2 max) | ≥ 366 (400 → 400) | 366 |
 
 - **The Personal API gateway is an allowlist.** These Connect paths return `404 {"error":"NOT_FOUND"}`:
   `/workout-service/workouts`, `/calendar-service/year/{y}/month/{m}`,
   `/personalrecord-service/personalrecord/prs/me`,
   `/metrics-service/metrics/trainingstatus/aggregated/{date}`,
   `/metrics-service/metrics/trainingreadiness/{date}`, `/badge-service/badge/earned`,
+  `/metrics-service/metrics/maxmet/latest/{date}` and all probed `racepredictions` paths (2026-11-23),
   `/activity-service/activity/{id}/splits`, `/activity-service/activity/{id}/typedsplits`,
   `/activity-service/activity/{id}/split_summaries`, `/activity-service/activity/{id}/laps`,
   `/activity-service/activity/{id}/hrTimeInZones`, `/activity-service/activity/{id}/weather`,
