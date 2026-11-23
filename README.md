@@ -113,9 +113,19 @@ Status: **S** supported, **P** partial, **U** unsupported (returns the `unsuppor
 | `health heart-rate [range]` | S | 1 request per day |
 | `health sleep [range]` | S | 1 request (date) / per 31 days (range) |
 | `health stress [range]` | S | 1 request per 28 days |
-| `health weight [range]` (default `-30d:today`) | S | 1 request per 366 days |
+| `health weight [range]` (default `-30d:today`) | S | 1 request per 366 days. `--entries`: individual weigh-ins (`weight/all`) instead of daily summaries |
 | `health hrv [range]` | S | 1 request (date or range ≤ 366 days) |
 | `health body-battery [range]` | S | 1 request per 31 days |
+| `health hydration [range]` | S | 1 request per 31 days. Empty unless hydration is logged in Garmin Connect |
+| `health spo2 [range]` | S | SpO2 + altitude acclimation; 1 request per day |
+| `health fitness-age [range]` | S | Fitness age + components; 1 request per day |
+| `health nutrition [range]` | S | Food logs: daily/meal goals + logged foods; 1 request per day |
+| `health hr-zones` | S | HR zone definitions per sport, floors expanded into ranges; 1 request |
+| `health weight-goal [range]` | S | Effective weight goal; chunked at the global range cap |
+| `health settings` | S | Profile settings: units, formats, time zone, hydration containers; 1 request |
+| `health wellness-activity [range]` | P | Wellness activity summaries, records unprojected (endpoint returns `[]` on this account so far) |
+| `health menstrual-summary [range]` | P | Menstrual cycle summary, unprojected; null on accounts with no cycle data; 1 request per day |
+| `health menstrual-day [range]` | P | Menstrual cycle day view (`todayDate` = today), unprojected; 1 request per day |
 | `health weekly-steps [date] [--weeks N]` | S | Local aggregation; 1 request per 28 days |
 | `health weekly-stress [date] [--weeks N]` | S | Local aggregation; 1 request per 28 days |
 
@@ -130,6 +140,7 @@ the day's object; a range returns `[{"date": ..., "data": {...}}]`. A failed day
 | Command | Status | Description |
 |---|---|---|
 | `stats summary [range]` | S | Daily summary: steps, distance, floors, calories, HR, intensity minutes, stress, Body Battery, respiration, hydration |
+| `stats user-summary [range]` | S | Per-day user summary (v1 `usersummary/daily`): calories consumed/remaining vs goal, floors, stress durations, Body Battery during sleep. 1 request per day |
 | `stats weekly [date] [--week-start monday\|sunday]` | S | Running volume: this week, previous week, 4-week average, longest run, run count (km + mi) |
 | `stats progress <start> [end] [--type KEY] [--miles]` | S | Activity totals per type between two dates |
 | `stats records` | U | Not an official data type |
@@ -176,7 +187,7 @@ The spec format is the same as the old CLI's:
 | Command | Status | Description |
 |---|---|---|
 | `capabilities` | S | Every command with `status`/`tier`/`reason`/`old_command`/params, the workout schema, env vars |
-| `api get <path> [--param K=V ...]` | S | Raw GET of any Personal API path, e.g. `/biometric-service/heartRateZones/v2` |
+| `api get <path> [--param K=V ...]` | S | Raw GET of any Personal API path (every spec path has a dedicated command since 2026-11-23; this remains for future/undocumented paths) |
 
 ## Envelopes and exit codes
 
