@@ -52,16 +52,18 @@ where each fact comes from and separates **documented facts**, **observed facts*
 | `/activity-service/activity/{id}` | `activity get` |
 | `/activity-service/activity/{id}/workouts` | (defined, not used by a command) |
 | `/download-service/files/activity/{id}` (ZIP bytes) | `activity download`, `activity splits` |
-| `/usersummary-service/stats/hydration/daily/{start}/{end}` | via `api get` |
-| `/goal-service/goal/user/effective/weightgoal/{start}/{end}` | via `api get` |
-| `/nutrition-service/food/logs/{date}` | via `api get` |
-| `/userprofile-service/userprofile/settings` | via `api get` |
-| `/biometric-service/heartRateZones/v2` | via `api get` |
-| `/fitnessage-service/fitnessage/v2/{date}` | via `api get` |
-| `/wellness-service/wellness/daily/spo2acclimation/{date}` | via `api get` |
-| `/wellnessactivity-service/activity/summary/range/{start}/{end}` | via `api get` |
-| `/periodichealth-service/menstrualcycle/summary/{date}` | via `api get` |
-| `/periodichealth-service/menstrualcycle/dayview/{date}?todayDate=` | via `api get` |
+| `/usersummary-service/stats/hydration/daily/{start}/{end}` | `health hydration` |
+| `/goal-service/goal/user/effective/weightgoal/{start}/{end}` | `health weight-goal` |
+| `/nutrition-service/food/logs/{date}` | `health nutrition` |
+| `/userprofile-service/userprofile/settings` | `health settings` |
+| `/biometric-service/heartRateZones/v2` | `health hr-zones` |
+| `/fitnessage-service/fitnessage/v2/{date}` | `health fitness-age` |
+| `/wellness-service/wellness/daily/spo2acclimation/{date}` | `health spo2` |
+| `/wellnessactivity-service/activity/summary/range/{start}/{end}` | `health wellness-activity` |
+| `/periodichealth-service/menstrualcycle/summary/{date}` | `health menstrual-summary` |
+| `/periodichealth-service/menstrualcycle/dayview/{date}?todayDate=` | `health menstrual-day` |
+| `/usersummary-service/usersummary/daily?calendarDate=` | `stats user-summary` |
+| `/weight-service/weight/all/{start}/{end}` | `health weight --entries` |
 
   Garmin's README says its wrappers "may lag behind new endpoints available through Personal API". Its
   generic `get()` exists for that, and `api get` mirrors it.
@@ -79,9 +81,64 @@ where each fact comes from and separates **documented facts**, **observed facts*
 ### Published spec (S8, read 2026-10-25)
 
 - Every path the CLI calls is in the spec except `/activity-service/activity/{id}/details` (above).
-- Spec paths with no dedicated command (reach them with `api get`): `/usersummary-service/usersummary/daily`,
-  `/weight-service/weight/all/{startDate}/{endDate}`, plus the hydration, weight goal, nutrition, fitness age,
-  SpO2, menstrual cycle and wellness activity paths already listed above.
+- Spec paths with no dedicated command: **none since 2026-11-23** — the usersummary/daily and weight/all
+  paths, plus the hydration, weight goal, nutrition, fitness age, SpO2, menstrual cycle and wellness
+  activity paths, all have commands now (see the table above and the S9 probes below).
+
+### Observed (S9, live probes 2026-11-23 — endpoint promotion)
+
+Every endpoint that had only been reachable via `api get` was probed live and promoted to a dedicated
+command. Results (account: Alex's; shapes inspected, no personal data stored — fixtures are synthetic):
+
+- **Hydration** (`health hydration`): HTTP 200, `[]` for every probed range (8, 28, 29 days) — the account
+  logs no hydration in Garmin Connect. A single 327-day call returned HTTP 400; Garmin's documented cap is
+  31 days per call, so the endpoint chunks at 31. The projection uses Garmin's documented field names
+  (`calendarDate`, `valueInML`, `goalInML`, `sweatLossInML`, `activityIntakeInML`,
+  `lastEntryTimestampLocal`) and will project to nulls until a recorded day exists.
+- **Weight goal** (`health weight-goal`): HTTP 200 for 28- and 90-day ranges. Shape
+  `{"userGoals": [{userGoalCategory, userGoalType ("WEIGHT_GRAMS"), startDate, endDate, goalName,
+  goalValue (grams), createDate, updateDate, trackingPeriodType}], "userGoalRanges": null}`. The endpoint
+  returns the goal effective in the window rather than one record per day; the command dedupes chunks.
+- **Nutrition** (`health nutrition`): HTTP 200. Shape: `mealDate`, `dayStartTime`/`dayEndTime`,
+  `dailyNutritionGoals` (calories/carbs/fat/protein + `adjusted*` variants), `mealDetails[]` each with
+  `meal` (empty object on this account), `mealNutritionGoals` and `loggedFoods[]` (empty — food is logged
+  in Lose It!, not Garmin), plus `loggedFoodsWithServingSizes[]`.
+- **Profile settings** (`health settings`): HTTP 200. Preferences object (locale, measurementSystem,
+  firstDayOfWeek, number/time/date/power/heartRate formats, timeZone, hydration unit + containers, golf
+  units). Its `displayName` is an opaque account UUID on this account, not a name — the projection
+  deliberately omits it.
+- **HR zones** (`health hr-zones`): HTTP 200. List per sport with `trainingMethod`, `maxHeartRateUsed`,
+  `lactateThresholdHeartRateUsed`, `restingHeartRateUsed` and `zone1Floor`…`zone5Floor`. The projection
+  expands floors into ranges (zone *i* = floor_i … floor_{i+1} − 1; zone 5 tops out at `maxHeartRateUsed`).
+- **Fitness age** (`health fitness-age`): HTTP 200. `chronologicalAge`, `fitnessAge`,
+  `achievableFitnessAge`, `previousFitnessAge`, `components` (per-component value/target/priority/stale),
+  `lastUpdated`.
+- **SpO2 acclimation** (`health spo2`): HTTP 200. Day object with average/lowest/latest SpO2 (all null on
+  the probed day — no SpO2 recorded), sleep window, and `spO2HourlyAverages` rows
+  `[timestamp_ms, spo2_level, monitoring_environment_level]` where the third column carries altitude in
+  meters even when SpO2 is null. The projection counts non-null hourly readings and reports the latest
+  altitude instead of dumping the series.
+- **Wellness activities** (`health wellness-activity`, partial): HTTP 200, `[]` for the probed 8-day window
+  and for 2026-01-01 → 2026-11-23. The account records no wellness activities, and the spec's
+  `WellnessActivitySummaryDTO` field list could not be extracted from the published spec page, so records
+  pass through unprojected rather than guessing a projection.
+- **Menstrual summary / day view** (`health menstrual-summary`, `health menstrual-day`, partial): HTTP 200
+  with a `null` body on this account (no cycle data). Day view takes `?todayDate=`; the command always
+  sends today. Payloads pass through unprojected until a recorded example exists.
+- **User summary** (`stats user-summary`): `/usersummary-service/usersummary/daily` needs
+  `?calendarDate=YYYY-MM-DD`. Bare, `?date=`, `?startDate=&endDate=`, `?fromDate=&untilDate=` and
+  `?start=&end=` all returned HTTP 400; the path form `/daily/{date}` returned the gateway's 404. The
+  payload is the v1 `UserDailySummaryDto`: calories total/active/BMR/consumed/remaining + `netCalorieGoal`,
+  steps/distance, floors (count and meters), intensity minutes, HR min/max/resting, stress level plus
+  per-level durations, Body Battery incl. during-sleep and at-wake values, SpO2 averages. It overlaps
+  `stats summary` (v2) but is not a duplicate: v2 has respiration and per-day chunking, v1 has
+  consumed/remaining calories, floors in meters, stress durations and sleep Body Battery. Account ids and
+  the day `uuid` are not projected.
+- **Weight all** (`health weight --entries`): HTTP 200. A flat list of individual weigh-ins
+  (`calendarDate`, `timestampGMT` epoch ms, `weight` grams, bmi/bodyFat/bodyWater/boneMass/muscleMass,
+  visceralFat, metabolicAge, physiqueRating, weightDelta) — distinct from `weight/range`'s per-day
+  summaries, so it is a flag on `health weight`, not a separate command. (A third-party client reported
+  this path returning HTTP 400; with path dates it worked on 2026-11-23.)
 - `/activity-service/activity/{id}/workouts` returns `ActivityWorkoutDTO[]` (`workoutName`, `sport`,
   `timeCreated`, `steps[]` of `WorkoutStepDTO`). Verified live 2026-10-25: it returns the structured workout a
   run was recorded with, and `[]` for free runs. Used by `activity workout`.

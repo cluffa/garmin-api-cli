@@ -67,9 +67,19 @@ pending), `enterprise` (not applied), `local` (pure local logic), or `none` (no 
 | `health heart-rate [range]` | `health heart-rate` | supported | personal | Daily heart rate, one request per day (no range endpoint), with the old `[{date,data}]` range shape. |
 | `health sleep [range]` | `health sleep` | supported | personal | `dailySleep` for one date; sleep-summaries range endpoint (31-day chunks) for ranges. |
 | `health stress [range]` | `health stress` | supported | personal | Daily stress range endpoint (28-day chunks). |
-| `health weight [range]` | `health weight` | supported | personal | Weight range endpoint (366-day chunks). Grams are converted to kg. Default range is now `-30d:today`. |
+| `health weight [range]` | `health weight` | supported | personal | Weight range endpoint (366-day chunks). Grams are converted to kg. Default range is now `-30d:today`. `--entries` lists individual weigh-ins from `weight/all` (verified live 2026-11-23: per-entry records, distinct from the daily summaries). |
 | `health hrv [range]` | `health hrv` | supported | personal | HRV summary + readings for one day, HRV summaries for a range. (The brief allowed a stub; the official Personal API includes HRV.) |
 | `health body-battery [range]` | `health body-battery` | supported | personal | Body Battery daily reports (31-day chunks). Not a standard *Business* Health API summary type, but Garmin's Personal API exposes it. |
+| — | `health hydration` | supported | personal | New 2026-11-23: daily hydration range endpoint (31-day chunks). Live probe returned `[]` — this account logs no hydration in Connect — so the projection follows Garmin's documented field names. |
+| — | `health spo2` | supported | personal | New 2026-11-23: daily SpO₂ + altitude acclimation (one request per day). Live-verified shape; hourly series reduced to a reading count + latest altitude. |
+| — | `health fitness-age` | supported | personal | New 2026-11-23: fitness age + components (one request per day). Live-verified shape. |
+| — | `health nutrition` | supported | personal | New 2026-11-23: food logs — daily/meal goals + logged foods (one request per day). Live-verified shape (goals present, no foods logged in Garmin). |
+| — | `health hr-zones` | supported | personal | New 2026-11-23: heart rate zones v2; floors expanded into per-sport ranges with method, max HR and lactate-threshold HR used. Live-verified shape. |
+| — | `health weight-goal` | supported | personal | New 2026-11-23: effective weight goal from the goal service. Live-verified shape (goal grams → kg). |
+| — | `health settings` | supported | personal | New 2026-11-23: user profile settings (units, formats, time zone, hydration containers). The raw `displayName` is an opaque account UUID on this account and is not projected. |
+| — | `health wellness-activity` | partial | personal | New 2026-11-23: wellness activity summaries. Endpoint live-verified (HTTP 200) but returned `[]` for every probed range (2026-01-01 → 2026-11-23), so records pass through unprojected until a recorded example exists. |
+| — | `health menstrual-summary` | partial | personal | New 2026-11-23: menstrual cycle summary. Live-verified HTTP 200 with `null` data (no cycle data on this account); payload passes through unprojected. |
+| — | `health menstrual-day` | partial | personal | New 2026-11-23: menstrual cycle day view (`todayDate` = today). Same live result as the summary: 200, `null`. |
 | `health weekly-steps [date] [--weeks N]` | `health weekly-steps` | supported | personal | Local weekly aggregation (Monday-start weeks) over official daily steps. Costs about one request per 4 weeks instead of one in total. |
 | `health weekly-stress [date] [--weeks N]` | `health weekly-stress` | supported | personal | Local weekly aggregation over official daily stress. |
 
@@ -78,6 +88,7 @@ pending), `enterprise` (not applied), `local` (pure local logic), or `none` (no 
 | Old command | New command | Status | Tier | Reason |
 |---|---|---|---|---|
 | `stats summary [date]` | `stats summary` | supported | personal | Personal API daily summaries (v2): steps, distance, floors, calories, HR, intensity minutes, stress, Body Battery, respiration, hydration. Avg SpO₂ is null unless Garmin includes it in the summary. |
+| — | `stats user-summary` | supported | personal | New 2026-11-23: the v1 per-day user summary (`usersummary/daily?calendarDate=`, one request per day; bare/`date=`/`startDate` params all returned HTTP 400 in probes). Carries calories consumed/remaining vs the net goal, floors, stress durations and Body Battery during sleep, which the v2 summaries do not. |
 | `stats weekly` | `stats weekly` | supported | personal | Local aggregation of official running activities: this week, previous week, prior-4-week average, longest run, run count (km and mi). |
 | `stats progress <start> <end>` | `stats progress` | supported | personal | Local aggregation of official activities per type between two dates. |
 | `stats records` | `stats records` (stub) | **unsupported** | none | Personal records are not an official data type. The Personal API gateway returns 404 for the Connect endpoint and no Business API offers it. |
@@ -124,7 +135,7 @@ does not manage the user's workout library or calendar. The Personal API gateway
 | Old command | New command | Status | Tier | Reason |
 |---|---|---|---|---|
 | `capabilities` | `capabilities` | supported | local | Now lists every command with `status`, `tier`, `reason` and the old command it replaces, plus the workout schema and config env vars. |
-| — | `api get` | supported | personal | New: raw GET passthrough to any Personal API path (hydration, SpO₂, fitness age, HR zones, food logs, profile settings and other endpoints without a dedicated command). |
+| — | `api get` | supported | personal | Raw GET passthrough to any Personal API path. Since 2026-11-23 every endpoint in Garmin's spec has a dedicated command; `api get` remains for future or undocumented paths. |
 
 ## Exact list of unsupported features
 

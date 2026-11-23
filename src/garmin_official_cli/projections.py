@@ -288,6 +288,330 @@ def weight_day(d: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def hydration_day(d: dict[str, Any]) -> dict[str, Any]:
+    """Daily hydration record (fields per Garmin's API description, S8 ecosystem clients).
+
+    Live-verified only as an empty list on 2026-11-23: this account logs no hydration
+    in Garmin Connect, so every field projects to null until a recorded day exists.
+    """
+    return pick(
+        d,
+        {
+            "date": "calendarDate",
+            "hydration_ml": "valueInML",
+            "goal_ml": "goalInML",
+            "sweat_loss_ml": "sweatLossInML",
+            "activity_intake_ml": "activityIntakeInML",
+            "last_entry_local": "lastEntryTimestampLocal",
+        },
+    )
+
+
+def weight_goal(payload: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Effective weight goal(s) from the goal-service payload (goalValue is grams)."""
+    out = []
+    for g in as_list((payload or {}).get("userGoals")):
+        if not isinstance(g, dict):
+            continue
+        out.append(
+            {
+                **pick(
+                    g,
+                    {
+                        "category": "userGoalCategory",
+                        "type": "userGoalType",
+                        "name": "goalName",
+                        "start_date": "startDate",
+                        "end_date": "endDate",
+                        "tracking_period": "trackingPeriodType",
+                        "created": "createDate",
+                        "updated": "updateDate",
+                    },
+                ),
+                "goal_kg": _grams_to_kg(g.get("goalValue")) if g.get("userGoalType") == "WEIGHT_GRAMS" else None,
+                "goal_value": g.get("goalValue"),
+            }
+        )
+    return out
+
+
+def weight_entry(e: dict[str, Any]) -> dict[str, Any]:
+    """One weigh-in from weight/all (per-entry, unlike weight/range's daily summaries)."""
+    return {
+        "date": e.get("calendarDate"),
+        "timestamp_gmt": ms_to_iso(e.get("timestampGMT")),
+        "weight_kg": _grams_to_kg(e.get("weight")),
+        "bmi": round_or_none(e.get("bmi"), 1),
+        "body_fat_pct": round_or_none(e.get("bodyFat"), 1),
+        "body_water_pct": round_or_none(e.get("bodyWater"), 1),
+        "muscle_mass_kg": _grams_to_kg(e.get("muscleMass")),
+        "bone_mass_kg": _grams_to_kg(e.get("boneMass")),
+        "visceral_fat": round_or_none(e.get("visceralFat"), 1),
+        "metabolic_age": round_or_none(e.get("metabolicAge"), 0),
+        "physique_rating": round_or_none(e.get("physiqueRating"), 0),
+        "weight_delta_kg": _grams_to_kg(e.get("weightDelta")),
+    }
+
+
+def _macro_block(b: dict[str, Any] | None) -> dict[str, Any]:
+    return pick(
+        b or {},
+        {
+            "calories": "calories",
+            "calories_adjusted": "adjustedCalories",
+            "carbs_g": "carbs",
+            "carbs_adjusted_g": "adjustedCarbs",
+            "fat_g": "fat",
+            "fat_adjusted_g": "adjustedFat",
+            "protein_g": "protein",
+            "protein_adjusted_g": "adjustedProtein",
+        },
+    )
+
+
+def _food_entry(f: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **pick(
+            f,
+            {
+                "food_id": "foodId",
+                "name": "foodName",
+                "brand": "brandName",
+                "amount": "amountInGrams",
+                "unit": "unitName",
+                "serving_size_g": "servingSizeInGrams",
+                "servings": "numberOfServings",
+            },
+        ),
+        **{
+            k: round_or_none(f.get(src), 1)
+            for k, src in (
+                ("calories", "calories"),
+                ("carbs_g", "carbs"),
+                ("fat_g", "fat"),
+                ("protein_g", "protein"),
+                ("sugar_g", "sugar"),
+                ("sodium_mg", "sodium"),
+                ("fiber_g", "fiber"),
+            )
+        },
+    }
+
+
+def food_log_day(d: dict[str, Any] | None) -> dict[str, Any] | None:
+    """One day of Garmin nutrition logs: goals plus per-meal logged foods."""
+    if not d:
+        return None
+    meals = []
+    for m in as_list(d.get("mealDetails")):
+        if not isinstance(m, dict):
+            continue
+        meal = m.get("meal") or {}
+        meals.append(
+            {
+                "meal_id": meal.get("mealId"),
+                "meal_name": meal.get("mealName"),
+                "goals": _macro_block(m.get("mealNutritionGoals")),
+                "foods": [_food_entry(f) for f in as_list(m.get("loggedFoods")) if isinstance(f, dict)],
+            }
+        )
+    return {
+        "date": d.get("mealDate"),
+        "day_start": d.get("dayStartTime"),
+        "day_end": d.get("dayEndTime"),
+        "goals": _macro_block(d.get("dailyNutritionGoals")),
+        "meals": meals,
+        "foods": [_food_entry(f) for f in as_list(d.get("loggedFoodsWithServingSizes")) if isinstance(f, dict)],
+    }
+
+
+def user_settings(s: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Profile display/format preferences. The raw payload's displayName (an opaque
+    account UUID on this account) is deliberately not projected."""
+    if not s:
+        return None
+    return {
+        **pick(
+            s,
+            {
+                "locale": "preferredLocale",
+                "measurement_system": "measurementSystem",
+                "number_format": "numberFormat",
+                "time_zone": "timeZone",
+                "hydration_unit": "hydrationMeasurementUnit",
+                "golf_distance_unit": "golfDistanceUnit",
+                "golf_elevation_unit": "golfElevationUnit",
+                "golf_speed_unit": "golfSpeedUnit",
+            },
+        ),
+        "first_day_of_week": dig(s, "firstDayOfWeek.dayName"),
+        "time_format": dig(s, "timeFormat.formatKey"),
+        "date_format": dig(s, "dateFormat.formatKey"),
+        "power_format": dig(s, "powerFormat.formatKey"),
+        "heart_rate_format": dig(s, "heartRateFormat.formatKey"),
+        "hydration_containers": [
+            pick(c, {"name": "name", "volume": "volume", "unit": "unit"})
+            for c in as_list(s.get("hydrationContainers"))
+            if isinstance(c, dict)
+        ],
+    }
+
+
+def hr_zones(rows: Any) -> list[dict[str, Any]]:
+    """Heart-rate zone definitions per sport: floors expanded into [low, high] ranges.
+
+    Zone i spans floor_i .. floor_{i+1} - 1; zone 5 tops out at maxHeartRateUsed.
+    """
+    out = []
+    for r in as_list(rows):
+        if not isinstance(r, dict):
+            continue
+        floors = [round_or_none(r.get(f"zone{i}Floor"), 0) for i in range(1, 6)]
+        max_hr = round_or_none(r.get("maxHeartRateUsed"), 0)
+        zones = []
+        for i, low in enumerate(floors):
+            high = (floors[i + 1] - 1) if i + 1 < len(floors) and floors[i + 1] is not None else max_hr
+            zones.append({"zone": i + 1, "low": low, "high": high})
+        out.append(
+            {
+                "sport": r.get("sport"),
+                "method": r.get("trainingMethod"),
+                "max_hr_used": max_hr,
+                "lactate_threshold_hr_used": round_or_none(r.get("lactateThresholdHeartRateUsed"), 0),
+                "resting_hr_used": round_or_none(r.get("restingHeartRateUsed"), 0),
+                "resting_hr_auto_update": r.get("restingHrAutoUpdateUsed"),
+                "zones": zones,
+            }
+        )
+    return out
+
+
+def fitness_age(d: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not d:
+        return None
+    out = pick(
+        d,
+        {
+            "chronological_age": "chronologicalAge",
+            "fitness_age": "fitnessAge",
+            "achievable_fitness_age": "achievableFitnessAge",
+            "previous_fitness_age": "previousFitnessAge",
+            "last_updated": "lastUpdated",
+        },
+    )
+    for key in ("fitness_age", "achievable_fitness_age", "previous_fitness_age"):
+        out[key] = round_or_none(out[key], 1)
+    components = {}
+    for name, c in ((d.get("components") or {}).items() if isinstance(d.get("components"), dict) else []):
+        if isinstance(c, dict):
+            components[name] = pick(
+                c,
+                {
+                    "value": "value",
+                    "target_value": "targetValue",
+                    "improvement_value": "improvementValue",
+                    "potential_age": "potentialAge",
+                    "priority": "priority",
+                    "stale": "stale",
+                    "last_measurement_date": "lastMeasurementDate",
+                },
+            )
+    out["components"] = components
+    return out
+
+
+def spo2_day(d: dict[str, Any] | None) -> dict[str, Any] | None:
+    """SpO2 + altitude-acclimation day. The hourly series are reduced to counts:
+    Garmin fills the level column with altitude (meters) even when SpO2 is null."""
+    if not d:
+        return None
+    hourly = [v for v in as_list(d.get("spO2HourlyAverages")) if isinstance(v, list)]
+    readings = [v[1] for v in hourly if len(v) > 1 and v[1] is not None]
+    env_levels = [v[2] for v in hourly if len(v) > 2 and v[2] is not None]
+    return {
+        **pick(
+            d,
+            {
+                "date": "calendarDate",
+                "avg_spo2": "averageSpO2",
+                "lowest_spo2": "lowestSpO2",
+                "latest_spo2": "latestSpO2",
+                "avg_7d_spo2": "lastSevenDaysAvgSpO2",
+                "avg_sleep_spo2": "avgSleepSpO2",
+                "latest_spo2_local": "latestSpO2TimestampLocal",
+                "sleep_start_local": "sleepStartTimestampLocal",
+                "sleep_end_local": "sleepEndTimestampLocal",
+            },
+        ),
+        "hourly_readings": len(readings),
+        "altitude_acclimation_m": round_or_none(env_levels[-1], 0) if env_levels else None,
+    }
+
+
+def user_summary_day(d: dict[str, Any] | None) -> dict[str, Any] | None:
+    """The v1 per-day user summary (usersummary/daily?calendarDate=).
+
+    Distinct from `stats summary` (v2 dailysummaries): this one carries calorie
+    consumed/remaining against the net goal, floors in meters, stress durations
+    and Body Battery during sleep. Account ids and the day UUID are not projected.
+    """
+    if not d:
+        return None
+    return pick(
+        d,
+        {
+            "date": "calendarDate",
+            "steps": "totalSteps",
+            "step_goal": "dailyStepGoal",
+            "distance_m": "totalDistanceMeters",
+            "wellness_distance_m": "wellnessDistanceMeters",
+            "calories_total": "totalKilocalories",
+            "calories_active": "activeKilocalories",
+            "calories_bmr": "bmrKilocalories",
+            "calories_consumed": "consumedKilocalories",
+            "calories_remaining": "remainingKilocalories",
+            "net_calorie_goal": "netCalorieGoal",
+            "floors_up": "floorsAscended",
+            "floors_down": "floorsDescended",
+            "floors_up_m": "floorsAscendedInMeters",
+            "floors_goal": "userFloorsAscendedGoal",
+            "intensity_moderate_min": "moderateIntensityMinutes",
+            "intensity_vigorous_min": "vigorousIntensityMinutes",
+            "intensity_goal_min": "intensityMinutesGoal",
+            "highly_active_s": "highlyActiveSeconds",
+            "active_s": "activeSeconds",
+            "sedentary_s": "sedentarySeconds",
+            "sleeping_s": "sleepingSeconds",
+            "min_hr": "minHeartRate",
+            "max_hr": "maxHeartRate",
+            "resting_hr": "restingHeartRate",
+            "resting_hr_7d_avg": "lastSevenDaysAvgRestingHeartRate",
+            "stress_avg": "averageStressLevel",
+            "stress_max": "maxStressLevel",
+            "stress_qualifier": "stressQualifier",
+            "stress_s": "stressDuration",
+            "rest_stress_s": "restStressDuration",
+            "low_stress_s": "lowStressDuration",
+            "medium_stress_s": "mediumStressDuration",
+            "high_stress_s": "highStressDuration",
+            "body_battery_charged": "bodyBatteryChargedValue",
+            "body_battery_drained": "bodyBatteryDrainedValue",
+            "body_battery_high": "bodyBatteryHighestValue",
+            "body_battery_low": "bodyBatteryLowestValue",
+            "body_battery_latest": "bodyBatteryMostRecentValue",
+            "body_battery_sleep": "bodyBatteryDuringSleep",
+            "body_battery_wake": "bodyBatteryAtWakeTime",
+            "spo2_avg": "averageSpo2",
+            "spo2_lowest": "lowestSpo2",
+            "spo2_latest": "latestSpo2",
+            "source": "source",
+            "includes_wellness": "includesWellnessData",
+            "includes_activity": "includesActivityData",
+            "includes_calories_consumed": "includesCalorieConsumedData",
+        },
+    )
+
+
 def daily_summary(d: dict[str, Any]) -> dict[str, Any]:
     return pick(
         d,

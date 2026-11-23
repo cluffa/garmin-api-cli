@@ -44,3 +44,20 @@ def test_progress(cli, transport):
     assert "trail_running" in d["by_type"] and "cycling" in d["by_type"]
     assert cli("stats", "progress", "-1d:today").code == 2
     assert cli("stats", "progress", "today", "-30d").code == 2
+
+
+def test_user_summary_single_and_range(cli, transport):
+    def handler(call):
+        return {**fixture("user_summary.json"), "calendarDate": call.params["calendarDate"]}
+
+    transport.add("GET", "/usersummary-service/usersummary/daily", handler)
+    d = cli("stats", "user-summary", "2026-10-21").data
+    assert transport.data_calls()[0].params == {"calendarDate": "2026-10-21"}
+    assert d["date"] == "2026-10-21" and d["steps"] == 12000 and d["step_goal"] == 10000
+    assert d["calories_consumed"] == 2100.0 and d["calories_remaining"] == 1520.0 and d["net_calorie_goal"] == 2000
+    assert d["floors_up_m"] == 30.5 and d["body_battery_sleep"] == 50 and d["stress_s"] == 12000
+    assert "userProfileId" not in str(d) and "uuid" not in d
+    r = cli("stats", "user-summary", "2026-10-20:2026-10-21").data
+    assert [x["date"] for x in r] == ["2026-10-20", "2026-10-21"]
+    assert r[0]["data"]["steps"] == 12000
+    assert cli("--full", "stats", "user-summary", "2026-10-21").data == fixture("user_summary.json")

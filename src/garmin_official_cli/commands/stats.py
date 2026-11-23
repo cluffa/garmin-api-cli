@@ -11,9 +11,9 @@ from .. import endpoints as ep
 from ..dates import DateRange, parse_date, week_start
 from ..errors import UsageError
 from ..output import as_list
-from ..projections import daily_summary
+from ..projections import daily_summary, user_summary_day
 from .activity import search_activities
-from .common import DATE_ARGS, State, add_unsupported, fetch_list, max_days_option, pass_state, range_argument, resolve_range
+from .common import DATE_ARGS, State, add_unsupported, fetch_list, max_days_option, pass_state, per_day, range_argument, resolve_range
 
 MAX_ACTIVITIES = 5000
 
@@ -35,6 +35,21 @@ def summary(state: State, range_spec: str | None, max_days: int) -> None:
         return
     projected = [daily_summary(d) for d in days]
     state.ok((projected[0] if projected else None) if rng.is_single else projected)
+
+
+@stats.command(
+    "user-summary",
+    context_settings=DATE_ARGS,
+    help="Per-day user summary (v1 usersummary/daily): calories consumed/remaining vs goal, floors, stress durations, "
+    "Body Battery during sleep. One request per day; a range returns [{date, data}]. Distinct from `stats summary` (v2).",
+)
+@range_argument()
+@max_days_option
+@pass_state
+def user_summary(state: State, range_spec: str | None, max_days: int) -> None:
+    rng = resolve_range(range_spec, max_days)
+    fetch = lambda d: state.client.get_json(ep.USER_SUMMARY, params={"calendarDate": d.isoformat()})  # noqa: E731
+    state.ok(per_day(rng, fetch, (lambda p: p) if state.full else user_summary_day))
 
 
 @stats.command("weekly", context_settings=DATE_ARGS, help="Weekly running volume: this week, previous week, 4-week average, longest run, run count.")
