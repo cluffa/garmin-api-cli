@@ -121,3 +121,129 @@ def test_weekly_steps_and_stress(cli, transport):
     s = cli("health", "weekly-stress", "2026-10-18", "--weeks", "1").data["weeks"][0]
     assert s["days"] == 7 and s["days_with_data"] == 6 and s["high_stress_s"] == 4200
     assert cli("health", "weekly-steps", "--weeks", "60").code == 2
+
+# --- endpoints promoted from `api get` on 2026-11-23 ---------------------------
+
+HYDRATION = "/usersummary-service/stats/hydration/daily/"
+
+
+def hydration_day(d, i):
+    return {
+        "calendarDate": d.isoformat(), "valueInML": 1500 + i * 100, "goalInML": 3000,
+        "sweatLossInML": 200, "activityIntakeInML": 250, "lastEntryTimestampLocal": f"{d.isoformat()}T12:00:00.0",
+    }
+
+
+def test_hydration_single_range_and_chunking(cli, transport):
+    route_range(transport, HYDRATION, hydration_day)
+    r = cli("health", "hydration", "2026-10-21")
+    assert r.data == [{"date": "2026-10-21", "hydration_ml": 1500, "goal_ml": 3000, "sweat_loss_ml": 200,
+                       "activity_intake_ml": 250, "last_entry_local": "2026-10-21T12:00:00.0"}]
+    r = cli("health", "hydration", "-40d:today")
+    assert len(r.data) == 41
+    calls = transport.data_calls()[1:]
+    assert [c.path for c in calls] == [
+        "/usersummary-service/stats/hydration/daily/2026-09-11/2026-10-11",
+        "/usersummary-service/stats/hydration/daily/2026-10-12/2026-10-21",
+    ]  # 31-day chunks
+
+
+def test_hydration_empty(cli, transport):
+    route_range(transport, HYDRATION, hydration_day)
+    transport.prefixes.clear()
+    transport.add_prefix("GET", HYDRATION, [])
+    assert cli("health", "hydration", "-6d:today").data == []
+
+
+def test_weight_entries(cli, transport):
+    transport.add("GET", "/weight-service/weight/all/2026-09-21/2026-10-21", fixture("weight_all.json"))
+    d = cli("health", "weight", "--entries").data  # default range -30d:today
+    assert [x["date"] for x in d] == ["2026-10-01", "2026-10-15"]  # sorted ascending
+    assert d[1]["weight_kg"] == 80.5 and d[1]["muscle_mass_kg"] == 38.0 and d[1]["weight_delta_kg"] == -0.3
+    assert d[1]["timestamp_gmt"] == "2026-10-15T05:00:00"
+    assert d[0]["bmi"] is None
+    assert cli("--full", "health", "weight", "--entries").data == fixture("weight_all.json")
+
+
+def test_weight_goal(cli, transport):
+    transport.add_prefix("GET", "/goal-service/goal/user/effective/weightgoal/", fixture("weight_goal.json"))
+    d = cli("health", "weight-goal", "2026-10-21").data
+    assert d == {"category": "MANUAL", "type": "WEIGHT_GRAMS", "name": None, "start_date": "2026-01-01",
+                 "end_date": None, "tracking_period": "DAILY", "created": "2026-01-01T00:00:00.0",
+                 "updated": "2026-01-02T00:00:00.0", "goal_kg": 75.0, "goal_value": 75000.0}
+    assert cli("--full", "health", "weight-goal", "2026-10-21").data == fixture("weight_goal.json")
+
+
+def test_hr_zones(cli, transport):
+    transport.add("GET", "/biometric-service/heartRateZones/v2", fixture("hr_zones.json"))
+    d = cli("health", "hr-zones").data
+    default, cycling = d
+    assert default["sport"] == "DEFAULT" and default["method"] == "LACTATE_THRESHOLD"
+    assert default["max_hr_used"] == 188 and default["lactate_threshold_hr_used"] == 165
+    assert default["zones"] == [
+        {"zone": 1, "low": 100, "high": 127}, {"zone": 2, "low": 128, "high": 145},
+        {"zone": 3, "low": 146, "high": 151}, {"zone": 4, "low": 152, "high": 164},
+        {"zone": 5, "low": 165, "high": 188},
+    ]
+    assert cycling["zones"][4] == {"zone": 5, "low": 165, "high": 185}
+    assert cli("--full", "health", "hr-zones").data == fixture("hr_zones.json")
+
+
+def test_fitness_age(cli, transport):
+    transport.add("GET", "/fitnessage-service/fitnessage/v2/2026-10-21", fixture("fitness_age.json"))
+    d = cli("health", "fitness-age", "2026-10-21").data
+    assert d["chronological_age"] == 30 and d["fitness_age"] == 25.4 and d["achievable_fitness_age"] == 23.1
+    assert d["components"]["bmi"]["value"] == 24.0 and d["components"]["bmi"]["target_value"] == 21.0
+    assert d["components"]["vigorousDaysAvg"]["stale"] is True
+    assert cli("--full", "health", "fitness-age", "2026-10-21").data == fixture("fitness_age.json")
+
+
+def test_spo2(cli, transport):
+    transport.add("GET", "/wellness-service/wellness/daily/spo2acclimation/2026-10-21", fixture("spo2.json"))
+    d = cli("health", "spo2", "2026-10-21").data
+    assert d["date"] == "2026-10-21" and d["avg_spo2"] == 97.0 and d["lowest_spo2"] == 94.0
+    assert d["hourly_readings"] == 2  # the null hour does not count
+    assert d["altitude_acclimation_m"] == 310
+    assert d["sleep_start_local"] == "2026-10-20T22:30:00.0"
+
+
+def test_nutrition(cli, transport):
+    transport.add("GET", "/nutrition-service/food/logs/2026-10-21", fixture("food_logs.json"))
+    d = cli("health", "nutrition", "2026-10-21").data
+    assert d["date"] == "2026-10-21"
+    assert d["goals"]["calories"] == 2200 and d["goals"]["calories_adjusted"] == 2400
+    breakfast, lunch = d["meals"]
+    assert breakfast["meal_name"] == "Breakfast" and breakfast["goals"]["protein_g"] == 41.0
+    food = breakfast["foods"][0]
+    assert food["name"] == "Synthetic Oats" and food["amount"] == 80.0 and food["servings"] == 2.0
+    assert food["calories"] == 300.0 and food["fiber_g"] == 8.0
+    assert lunch["foods"] == [] and d["foods"] == []
+    assert cli("--full", "health", "nutrition", "2026-10-21").data == fixture("food_logs.json")
+
+
+def test_settings_projection_drops_display_name(cli, transport):
+    transport.add("GET", "/userprofile-service/userprofile/settings", fixture("user_settings.json"))
+    d = cli("health", "settings").data
+    assert d["measurement_system"] == "metric" and d["time_zone"] == "Europe/Berlin"
+    assert d["first_day_of_week"] == "sunday" and d["time_format"] == "time_twenty_four_hr"
+    assert d["hydration_containers"] == [{"name": "Bottle", "volume": 750, "unit": "milliliter"}]
+    assert "displayName" not in str(d) and "display_name" not in d
+    assert cli("--full", "health", "settings").data == fixture("user_settings.json")
+
+
+def test_wellness_activity_passthrough(cli, transport):
+    rows = [{"calendarDate": "2026-10-21", "activityType": "yoga", "durationInSeconds": 1800}]
+    transport.add_prefix("GET", "/wellnessactivity-service/activity/summary/range/", rows)
+    assert cli("health", "wellness-activity", "-6d:today").data == rows
+    transport.prefixes.clear()
+    transport.add_prefix("GET", "/wellnessactivity-service/activity/summary/range/", [])
+    assert cli("health", "wellness-activity", "-6d:today").data == []
+
+
+def test_menstrual_null_on_empty_account(cli, transport):
+    transport.add("GET", "/periodichealth-service/menstrualcycle/summary/2026-10-21", json_response(None))
+    transport.add("GET", "/periodichealth-service/menstrualcycle/dayview/2026-10-21", json_response(None))
+    assert cli("health", "menstrual-summary", "2026-10-21").data is None
+    r = cli("health", "menstrual-day", "2026-10-21")
+    assert r.data is None
+    assert transport.data_calls()[-1].params == {"todayDate": "2026-10-21"}

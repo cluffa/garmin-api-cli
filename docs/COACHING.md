@@ -19,7 +19,7 @@ setting as `activity.device_units` (`statute` = miles).
 4. For each key run: `garmin activity analyze <id>`. This is one download and holds everything per run
    below. `garmin activity get <id>` adds the server-side fields (compliance score, stamina,
    Body Battery change, typed split summaries).
-5. Zones, if needed outside an activity: `garmin api get /biometric-service/heartRateZones/v2`.
+5. Zones, if needed outside an activity: `garmin health hr-zones`.
 
 ## The checklist, item by item
 
